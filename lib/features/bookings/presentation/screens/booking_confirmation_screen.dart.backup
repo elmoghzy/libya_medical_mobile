@@ -1,0 +1,674 @@
+import 'package:flutter/material.dart';
+
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/bottom_nav_bar.dart';
+import '../../../../core/widgets/app_top_bar.dart';
+import '../../../home/presentation/screens/patient_dashboard_screen.dart';
+
+class BookingConfirmationScreen extends StatefulWidget {
+  const BookingConfirmationScreen({
+    super.key,
+    this.doctorId,
+    required this.doctorName,
+    this.specialty,
+    this.fee,
+    required this.date,
+    required this.time,
+    this.bookingDate,
+    this.bookingTime,
+  });
+
+  final int? doctorId;
+  final String doctorName;
+  final String? specialty;
+  final String? fee;
+  final String date;
+  final String time;
+  final String? bookingDate; // API format: YYYY-MM-DD
+  final String? bookingTime; // API format: HH:MM
+
+  @override
+  State<BookingConfirmationScreen> createState() =>
+      _BookingConfirmationScreenState();
+}
+
+class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
+  final _reasonController = TextEditingController();
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  void _confirmBooking() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.success.withValues(alpha: 0.2),
+              ),
+              child: const Icon(
+                Icons.check,
+                size: 32,
+                color: AppColors.tertiary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Booking Confirmed!',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your appointment has been scheduled successfully.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary.withValues(alpha: 0.8),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => const PatientDashboardScreen(),
+                  ),
+                  (route) => false,
+                );
+              },
+              child: const Text('Go to Dashboard'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.surface,
+      body: Column(
+        children: [
+          const AppTopBar(showBackButton: true),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 24),
+                  // Step indicator
+                  _buildStepIndicator(),
+                  const SizedBox(height: 32),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Left column - Details
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Review & Confirm',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textPrimary,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Please check your appointment details before proceeding.',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: AppColors.textSecondary.withValues(
+                                  alpha: 0.8,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+                            // Doctor card
+                            _buildDoctorCard(),
+                            const SizedBox(height: 20),
+                            // Date & Time cards
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildInfoCard(
+                                    Icons.calendar_month,
+                                    'Date',
+                                    'Monday, Oct 24',
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: _buildInfoCard(
+                                    Icons.schedule,
+                                    'Time',
+                                    widget.time,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            // Reason input
+                            const Text(
+                              'REASON FOR VISIT',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.5,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _reasonController,
+                              maxLines: 5,
+                              decoration: InputDecoration(
+                                hintText:
+                                    'Please briefly describe your symptoms or the reason for your consultation...',
+                                hintStyle: TextStyle(
+                                  color: AppColors.outlineVariant,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      // Right column - Summary
+                      Expanded(flex: 2, child: _buildSummaryCard()),
+                    ],
+                  ),
+                  const SizedBox(height: 100),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: AppBottomNavBar(
+        currentIndex: 2,
+        onTap: (index) {
+          if (index != 2) Navigator.pop(context);
+        },
+      ),
+    );
+  }
+
+  Widget _buildStepIndicator() {
+    return Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _StepDot(
+            number: '1',
+            label: 'Select',
+            isActive: true,
+            isCompleted: true,
+          ),
+          _StepLine(isActive: true),
+          _StepDot(
+            number: '2',
+            label: 'Time',
+            isActive: true,
+            isCompleted: true,
+          ),
+          _StepLine(isActive: false),
+          _StepDot(
+            number: '3',
+            label: 'Confirm',
+            isActive: true,
+            isCompleted: false,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDoctorCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textPrimary.withValues(alpha: 0.06),
+            blurRadius: 32,
+            offset: const Offset(0, 16),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Avatar
+          Stack(
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.person,
+                  size: 32,
+                  color: AppColors.primary,
+                ),
+              ),
+              Positioned(
+                bottom: -4,
+                right: -4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.success,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'ACTIVE',
+                        style: TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 16),
+          // Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'SENIOR CARDIOLOGIST',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1,
+                    color: AppColors.tertiary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.doctorName,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.star, size: 14, color: Colors.amber),
+                    const SizedBox(width: 4),
+                    Text(
+                      '4.9 (120 reviews)',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary.withValues(alpha: 0.8),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Icon(
+                      Icons.location_on_outlined,
+                      size: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Tripoli Medical Center',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(IconData icon, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: AppColors.primary, size: 22),
+          ),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1,
+                  color: AppColors.textSecondary.withValues(alpha: 0.6),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textPrimary.withValues(alpha: 0.06),
+            blurRadius: 32,
+            offset: const Offset(0, 16),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Booking Summary',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 24),
+          _SummaryRow(label: 'Consultation Fee', value: 'LYD 120.00'),
+          const SizedBox(height: 12),
+          _SummaryRow(label: 'Service Charge', value: 'LYD 5.00'),
+          const SizedBox(height: 12),
+          _SummaryRow(
+            label: 'Digital Health Record',
+            value: 'FREE',
+            isFree: true,
+          ),
+          const SizedBox(height: 16),
+          Divider(color: AppColors.surfaceContainerHigh),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'TOTAL AMOUNT',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1,
+                      color: AppColors.textSecondary.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'LYD 125.00',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                'Includes all taxes',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontStyle: FontStyle.italic,
+                  color: AppColors.textSecondary.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          // Security note
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.tertiary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.verified_user,
+                  color: AppColors.tertiary,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Your payment is secure. We use bank-level encryption to protect your data.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.tertiary.withValues(alpha: 0.8),
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Confirm button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _confirmBooking,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Text('Confirm Booking'),
+                  SizedBox(width: 8),
+                  Icon(Icons.arrow_forward, size: 18),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Center(
+            child: RichText(
+              text: TextSpan(
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondary.withValues(alpha: 0.6),
+                ),
+                children: const [
+                  TextSpan(text: 'By confirming, you agree to our '),
+                  TextSpan(
+                    text: 'Terms of Service',
+                    style: TextStyle(decoration: TextDecoration.underline),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepDot extends StatelessWidget {
+  const _StepDot({
+    required this.number,
+    required this.label,
+    required this.isActive,
+    required this.isCompleted,
+  });
+
+  final String number;
+  final String label;
+  final bool isActive;
+  final bool isCompleted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isActive ? AppColors.primary : AppColors.primaryContainer,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            number,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: isActive ? Colors.white : AppColors.primary,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1,
+            color: isActive ? AppColors.primary : AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StepLine extends StatelessWidget {
+  const _StepLine({required this.isActive});
+
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 60,
+      height: 2,
+      margin: const EdgeInsets.only(bottom: 24, left: 8, right: 8),
+      color: isActive
+          ? AppColors.primary
+          : AppColors.primary.withValues(alpha: 0.3),
+    );
+  }
+}
+
+class _SummaryRow extends StatelessWidget {
+  const _SummaryRow({
+    required this.label,
+    required this.value,
+    this.isFree = false,
+  });
+
+  final String label;
+  final String value;
+  final bool isFree;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            color: AppColors.textSecondary.withValues(alpha: 0.8),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isFree ? FontWeight.w700 : FontWeight.w600,
+            color: isFree ? AppColors.tertiary : AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+}
