@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../queue/logic/clinic_queue_cubit.dart';
 
 class ConsultationViewScreen extends StatefulWidget {
-  const ConsultationViewScreen({super.key});
+  const ConsultationViewScreen({super.key, this.patientId});
+
+  final int? patientId;
 
   @override
   State<ConsultationViewScreen> createState() => _ConsultationViewScreenState();
@@ -66,7 +71,26 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
     );
   }
 
+  ClinicQueuePatient? get _currentPatient {
+    final queueState = context.read<ClinicQueueCubit>().state;
+    if (widget.patientId != null) {
+      return queueState.patientById(widget.patientId!);
+    }
+    return queueState.activePatient;
+  }
+
   Widget _buildPatientPanel() {
+    final patient = _currentPatient;
+    final patientName = patient == null
+        ? context.locText(en: 'Fatima Al-Farsi', ar: 'فاطمة الفارسي')
+        : (context.l10n.isArabic ? patient.nameAr : patient.nameEn);
+    final patientMeta = patient == null
+        ? context.locText(
+            en: 'Female, 34 years • Patient ID: P-2024-0847',
+            ar: 'أنثى، 34 سنة • رقم المريض: P-2024-0847',
+          )
+        : '${context.l10n.isArabic ? patient.genderAr : patient.genderEn}، ${patient.age} ${context.locText(en: 'years', ar: 'سنة')} • ${context.locText(en: 'Queue #${patient.queueNumber}', ar: 'رقم الدور ${patient.queueNumber}')}';
+
     return Container(
       margin: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -122,8 +146,11 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
                             ),
                           ),
                           const SizedBox(width: 6),
-                          const Text(
-                            'CONSULTATION ACTIVE',
+                          Text(
+                            context.locText(
+                              en: 'CONSULTATION ACTIVE',
+                              ar: 'الاستشارة نشطة',
+                            ),
                             style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
@@ -164,8 +191,8 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Fatima Al-Farsi',
+                Text(
+                  patientName,
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -174,7 +201,7 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Female, 34 years • Patient ID: P-2024-0847',
+                  patientMeta,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.white.withValues(alpha: 0.8),
@@ -222,42 +249,65 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildInfoSection('Vitals', [
-                    _buildVitalItem(
-                      'Blood Pressure',
-                      '120/80',
-                      'mmHg',
-                      AppColors.tertiary,
-                    ),
-                    _buildVitalItem(
-                      'Heart Rate',
-                      '72',
-                      'bpm',
-                      AppColors.primary,
-                    ),
-                    _buildVitalItem(
-                      'Temperature',
-                      '36.8',
-                      '°C',
-                      AppColors.warning,
-                    ),
-                    _buildVitalItem('SpO2', '98', '%', AppColors.success),
-                  ]),
+                  _buildInfoSection(
+                    context.locText(en: 'Vitals', ar: 'العلامات الحيوية'),
+                    [
+                      _buildVitalItem(
+                        context.locText(en: 'Blood Pressure', ar: 'ضغط الدم'),
+                        '120/80',
+                        'mmHg',
+                        AppColors.tertiary,
+                      ),
+                      _buildVitalItem(
+                        context.locText(en: 'Heart Rate', ar: 'معدل النبض'),
+                        '72',
+                        'bpm',
+                        AppColors.primary,
+                      ),
+                      _buildVitalItem(
+                        context.locText(en: 'Temperature', ar: 'الحرارة'),
+                        '36.8',
+                        '°C',
+                        AppColors.warning,
+                      ),
+                      _buildVitalItem(
+                        context.locText(en: 'SpO2', ar: 'الأكسجين'),
+                        '98',
+                        '%',
+                        AppColors.success,
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 24),
-                  _buildInfoSection('Allergies', [
-                    _buildChip('Penicillin', AppColors.error),
-                    _buildChip('Aspirin', AppColors.warning),
-                  ]),
+                  _buildInfoSection(
+                    context.locText(en: 'Allergies', ar: 'الحساسية'),
+                    [
+                      _buildChip('Penicillin', AppColors.error),
+                      _buildChip('Aspirin', AppColors.warning),
+                    ],
+                  ),
                   const SizedBox(height: 24),
-                  _buildInfoSection('Current Medications', [
-                    _buildMedicationItem('Lisinopril', '10mg', 'Daily'),
-                    _buildMedicationItem('Metformin', '500mg', 'Twice daily'),
-                  ]),
+                  _buildInfoSection(
+                    context.locText(
+                      en: 'Current Medications',
+                      ar: 'الأدوية الحالية',
+                    ),
+                    [
+                      _buildMedicationItem('Lisinopril', '10mg', 'Daily'),
+                      _buildMedicationItem('Metformin', '500mg', 'Twice daily'),
+                    ],
+                  ),
                   const SizedBox(height: 24),
-                  _buildInfoSection('Medical History', [
-                    _buildHistoryItem('Hypertension', '2019'),
-                    _buildHistoryItem('Type 2 Diabetes', '2020'),
-                  ]),
+                  _buildInfoSection(
+                    context.locText(
+                      en: 'Medical History',
+                      ar: 'التاريخ المرضي',
+                    ),
+                    [
+                      _buildHistoryItem('Hypertension', '2019'),
+                      _buildHistoryItem('Type 2 Diabetes', '2020'),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -271,7 +321,7 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
                   child: OutlinedButton.icon(
                     onPressed: () {},
                     icon: const Icon(Icons.folder_open, size: 18),
-                    label: const Text('Records'),
+                    label: Text(context.locText(en: 'Records', ar: 'السجل')),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -279,7 +329,7 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
                   child: OutlinedButton.icon(
                     onPressed: () {},
                     icon: const Icon(Icons.history, size: 18),
-                    label: const Text('History'),
+                    label: Text(context.locText(en: 'History', ar: 'السوابق')),
                   ),
                 ),
               ],
@@ -324,10 +374,22 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
-              tabs: const [
-                Tab(text: 'Notes & Diagnosis'),
-                Tab(text: 'Prescription'),
-                Tab(text: 'Lab Tests'),
+              tabs: [
+                Tab(
+                  text: context.locText(
+                    en: 'Notes & Diagnosis',
+                    ar: 'الملاحظات والتشخيص',
+                  ),
+                ),
+                Tab(
+                  text: context.locText(
+                    en: 'Prescription',
+                    ar: 'الوصفة الطبية',
+                  ),
+                ),
+                Tab(
+                  text: context.locText(en: 'Lab Tests', ar: 'التحاليل'),
+                ),
               ],
             ),
           ),
@@ -359,7 +421,9 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    child: const Text('Save Draft'),
+                    child: Text(
+                      context.locText(en: 'Save Draft', ar: 'حفظ كمسودة'),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -373,11 +437,14 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
+                      children: [
                         Icon(Icons.check_circle, size: 20, color: Colors.white),
                         SizedBox(width: 8),
                         Text(
-                          'Complete Consultation',
+                          context.locText(
+                            en: 'Complete Consultation',
+                            ar: 'إنهاء الاستشارة',
+                          ),
                           style: TextStyle(color: Colors.white),
                         ),
                       ],
@@ -399,8 +466,8 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Symptoms selection
-          const Text(
-            'SYMPTOMS',
+          Text(
+            context.locText(en: 'SYMPTOMS', ar: 'الأعراض'),
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -442,7 +509,7 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
                     ),
                   ),
                   child: Text(
-                    symptom,
+                    _localizedClinicalText(symptom),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -457,8 +524,8 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
           ),
           const SizedBox(height: 28),
           // Clinical notes
-          const Text(
-            'CLINICAL NOTES',
+          Text(
+            context.locText(en: 'CLINICAL NOTES', ar: 'الملاحظات السريرية'),
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -471,8 +538,10 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
             controller: _notesController,
             maxLines: 6,
             decoration: InputDecoration(
-              hintText:
-                  'Enter clinical observations, patient complaints, and examination findings...',
+              hintText: context.locText(
+                en: 'Enter clinical observations, patient complaints, and examination findings...',
+                ar: 'أدخل الملاحظات السريرية وشكوى المريض ونتائج الفحص...',
+              ),
               hintStyle: TextStyle(
                 color: AppColors.outlineVariant,
                 fontSize: 14,
@@ -481,8 +550,8 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
           ),
           const SizedBox(height: 28),
           // Diagnosis
-          const Text(
-            'DIAGNOSIS',
+          Text(
+            context.locText(en: 'DIAGNOSIS', ar: 'التشخيص'),
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -495,8 +564,10 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
             controller: _diagnosisController,
             maxLines: 4,
             decoration: InputDecoration(
-              hintText:
-                  'Enter primary and secondary diagnosis (ICD-10 codes will be auto-suggested)...',
+              hintText: context.locText(
+                en: 'Enter primary and secondary diagnosis (ICD-10 codes will be auto-suggested)...',
+                ar: 'أدخل التشخيص الأساسي والثانوي وسيتم اقتراح رموز ICD-10 تلقائيًا...',
+              ),
               hintStyle: TextStyle(
                 color: AppColors.outlineVariant,
                 fontSize: 14,
@@ -529,7 +600,9 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
           OutlinedButton.icon(
             onPressed: _showAddMedicationDialog,
             icon: const Icon(Icons.add),
-            label: const Text('Add Medication'),
+            label: Text(
+              context.locText(en: 'Add Medication', ar: 'إضافة دواء'),
+            ),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             ),
@@ -561,8 +634,8 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
           ),
           const SizedBox(height: 28),
           // Instructions
-          const Text(
-            'SPECIAL INSTRUCTIONS',
+          Text(
+            context.locText(en: 'SPECIAL INSTRUCTIONS', ar: 'تعليمات خاصة'),
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -575,8 +648,10 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
             controller: _prescriptionController,
             maxLines: 4,
             decoration: InputDecoration(
-              hintText:
-                  'Enter any special instructions for the patient regarding the prescription...',
+              hintText: context.locText(
+                en: 'Enter any special instructions for the patient regarding the prescription...',
+                ar: 'أدخل أي تعليمات خاصة للمريض بخصوص الوصفة الطبية...',
+              ),
               hintStyle: TextStyle(
                 color: AppColors.outlineVariant,
                 fontSize: 14,
@@ -598,7 +673,7 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
           OutlinedButton.icon(
             onPressed: () {},
             icon: const Icon(Icons.add),
-            label: const Text('Order Lab Test'),
+            label: Text(context.locText(en: 'Order Lab Test', ar: 'طلب تحليل')),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             ),
@@ -614,8 +689,8 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
           _buildLabTestItem('Chest X-Ray', 'Completed', true, hasResult: true),
           const SizedBox(height: 28),
           // Quick order suggestions
-          const Text(
-            'SUGGESTED TESTS',
+          Text(
+            context.locText(en: 'SUGGESTED TESTS', ar: 'تحاليل مقترحة'),
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -644,7 +719,7 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          title.toUpperCase(),
+          context.l10n.isArabic ? title : title.toUpperCase(),
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w700,
@@ -710,7 +785,7 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
-        label,
+        _localizedClinicalText(label),
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
@@ -737,7 +812,7 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$name - $dose',
+                  '${_localizedClinicalText(name)} - $dose',
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -745,7 +820,7 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
                   ),
                 ),
                 Text(
-                  frequency,
+                  _localizedClinicalText(frequency),
                   style: TextStyle(
                     fontSize: 11,
                     color: AppColors.textSecondary.withValues(alpha: 0.7),
@@ -771,7 +846,7 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            condition,
+            _localizedClinicalText(condition),
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
@@ -779,7 +854,7 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
             ),
           ),
           Text(
-            'Since $year',
+            context.locText(en: 'Since $year', ar: 'منذ $year'),
             style: TextStyle(
               fontSize: 11,
               color: AppColors.textSecondary.withValues(alpha: 0.6),
@@ -806,7 +881,7 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
             const Icon(Icons.add, size: 14, color: AppColors.tertiary),
             const SizedBox(width: 6),
             Text(
-              label,
+              _localizedClinicalText(label),
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -855,7 +930,7 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
                 Row(
                   children: [
                     Text(
-                      name,
+                      _localizedClinicalText(name),
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -885,7 +960,7 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '$frequency • $quantity',
+                  '${_localizedClinicalText(frequency)} • $quantity',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary.withValues(alpha: 0.7),
@@ -894,7 +969,7 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
                 if (notes.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
-                    notes,
+                    _localizedClinicalText(notes),
                     style: TextStyle(
                       fontSize: 11,
                       fontStyle: FontStyle.italic,
@@ -984,7 +1059,7 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      status,
+                      _localizedClinicalText(status),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -997,7 +1072,12 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
             ),
           ),
           if (hasResult)
-            TextButton(onPressed: () {}, child: const Text('View Result')),
+            TextButton(
+              onPressed: () {},
+              child: Text(
+                context.locText(en: 'View Result', ar: 'عرض النتيجة'),
+              ),
+            ),
         ],
       ),
     );
@@ -1008,43 +1088,54 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Add Medication'),
+        title: Text(context.locText(en: 'Add Medication', ar: 'إضافة دواء')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              decoration: const InputDecoration(labelText: 'Medication Name'),
+              decoration: InputDecoration(
+                labelText: context.locText(
+                  en: 'Medication Name',
+                  ar: 'اسم الدواء',
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
                   child: TextField(
-                    decoration: const InputDecoration(labelText: 'Dosage'),
+                    decoration: InputDecoration(
+                      labelText: context.locText(en: 'Dosage', ar: 'الجرعة'),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: TextField(
-                    decoration: const InputDecoration(labelText: 'Quantity'),
+                    decoration: InputDecoration(
+                      labelText: context.locText(en: 'Quantity', ar: 'الكمية'),
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             TextField(
-              decoration: const InputDecoration(labelText: 'Frequency'),
+              decoration: InputDecoration(
+                labelText: context.locText(en: 'Frequency', ar: 'التكرار'),
+              ),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(context.locText(en: 'Cancel', ar: 'إلغاء')),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Add'),
+            child: Text(context.locText(en: 'Add', ar: 'إضافة')),
           ),
         ],
       ),
@@ -1052,6 +1143,11 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
   }
 
   void _completeConsultation() {
+    final patientId = _currentPatient?.id;
+    if (patientId != null) {
+      context.read<ClinicQueueCubit>().completePatient(patientId);
+    }
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1073,8 +1169,11 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Consultation Completed',
+            Text(
+              context.locText(
+                en: 'Consultation Completed',
+                ar: 'اكتملت الاستشارة',
+              ),
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
@@ -1083,7 +1182,10 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              'All records have been saved successfully.',
+              context.locText(
+                en: 'All records have been saved successfully.',
+                ar: 'تم حفظ جميع السجلات بنجاح.',
+              ),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -1100,11 +1202,95 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
                 Navigator.pop(context);
                 Navigator.pop(context);
               },
-              child: const Text('Back to Queue'),
+              child: Text(
+                context.locText(en: 'Back to Queue', ar: 'العودة للطابور'),
+              ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _localizedClinicalText(String value) {
+    switch (value) {
+      case 'Chest Pain':
+        return context.locText(en: value, ar: 'ألم في الصدر');
+      case 'Shortness of Breath':
+        return context.locText(en: value, ar: 'ضيق في التنفس');
+      case 'Fatigue':
+        return context.locText(en: value, ar: 'إرهاق');
+      case 'Dizziness':
+        return context.locText(en: value, ar: 'دوخة');
+      case 'Palpitations':
+        return context.locText(en: value, ar: 'خفقان');
+      case 'Swelling':
+        return context.locText(en: value, ar: 'تورم');
+      case 'Nausea':
+        return context.locText(en: value, ar: 'غثيان');
+      case 'Headache':
+        return context.locText(en: value, ar: 'صداع');
+      case 'Penicillin':
+        return context.locText(en: value, ar: 'بنسلين');
+      case 'Aspirin':
+        return context.locText(en: value, ar: 'أسبرين');
+      case 'Lisinopril':
+        return context.locText(en: value, ar: 'ليزينوبريل');
+      case 'Metformin':
+        return context.locText(en: value, ar: 'ميتفورمين');
+      case 'Atorvastatin':
+        return context.locText(en: value, ar: 'أتورفاستاتين');
+      case 'Metoprolol':
+        return context.locText(en: value, ar: 'ميتوبرولول');
+      case 'Daily':
+        return context.locText(en: value, ar: 'يوميًا');
+      case 'Twice daily':
+        return context.locText(en: value, ar: 'مرتين يوميًا');
+      case 'Once daily':
+        return context.locText(en: value, ar: 'مرة يوميًا');
+      case 'Once daily at night':
+        return context.locText(en: value, ar: 'مرة يوميًا ليلًا');
+      case 'For cholesterol management':
+        return context.locText(en: value, ar: 'للسيطرة على الكوليسترول');
+      case 'Blood thinner':
+        return context.locText(en: value, ar: 'مميع للدم');
+      case 'For heart rate control':
+        return context.locText(en: value, ar: 'للتحكم في معدل النبض');
+      case 'Hypertension':
+        return context.locText(en: value, ar: 'ارتفاع ضغط الدم');
+      case 'Type 2 Diabetes':
+        return context.locText(en: value, ar: 'السكري من النوع الثاني');
+      case 'Angina Pectoris (I20.9)':
+        return context.locText(en: value, ar: 'الذبحة الصدرية (I20.9)');
+      case 'Hypertensive Heart Disease (I11.9)':
+        return context.locText(
+          en: value,
+          ar: 'مرض القلب الناتج عن الضغط (I11.9)',
+        );
+      case 'Atrial Fibrillation (I48.91)':
+        return context.locText(en: value, ar: 'الرجفان الأذيني (I48.91)');
+      case 'Complete Blood Count (CBC)':
+        return context.locText(en: value, ar: 'صورة دم كاملة (CBC)');
+      case 'Lipid Panel':
+        return context.locText(en: value, ar: 'تحليل الدهون');
+      case 'ECG (Electrocardiogram)':
+        return context.locText(en: value, ar: 'تخطيط القلب (ECG)');
+      case 'Chest X-Ray':
+        return context.locText(en: value, ar: 'أشعة سينية للصدر');
+      case 'Cardiac Enzymes':
+        return context.locText(en: value, ar: 'إنزيمات القلب');
+      case 'Echocardiogram':
+        return context.locText(en: value, ar: 'موجات صوتية على القلب');
+      case 'Stress Test':
+        return context.locText(en: value, ar: 'اختبار الجهد');
+      case 'Ordered':
+        return context.locText(en: value, ar: 'تم الطلب');
+      case 'In Progress':
+        return context.locText(en: value, ar: 'قيد التنفيذ');
+      case 'Completed':
+        return context.locText(en: value, ar: 'مكتمل');
+      default:
+        return value;
+    }
   }
 }

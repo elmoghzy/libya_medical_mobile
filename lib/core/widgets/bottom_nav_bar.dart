@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../localization/app_localizations.dart';
 import '../theme/app_colors.dart';
 
 class AppBottomNavBar extends StatelessWidget {
@@ -16,49 +17,51 @@ class AppBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     final items = isDoctor
-        ? const [
+        ? [
             _NavItem(
               icon: Icons.home_outlined,
               activeIcon: Icons.home,
-              label: 'Home',
+              label: l10n.tr('home'),
             ),
             _NavItem(
               icon: Icons.medical_services_outlined,
               activeIcon: Icons.medical_services,
-              label: 'Queue',
+              label: l10n.tr('queue'),
             ),
             _NavItem(
               icon: Icons.calendar_today_outlined,
               activeIcon: Icons.calendar_today,
-              label: 'Schedule',
+              label: l10n.tr('schedule'),
             ),
             _NavItem(
               icon: Icons.person_outline,
               activeIcon: Icons.person,
-              label: 'Profile',
+              label: l10n.tr('profile'),
             ),
           ]
-        : const [
+        : [
             _NavItem(
               icon: Icons.home_outlined,
               activeIcon: Icons.home,
-              label: 'Home',
+              label: l10n.tr('home'),
             ),
             _NavItem(
               icon: Icons.search_outlined,
               activeIcon: Icons.search,
-              label: 'Search',
+              label: l10n.tr('search'),
             ),
             _NavItem(
               icon: Icons.calendar_today_outlined,
               activeIcon: Icons.calendar_today,
-              label: 'Bookings',
+              label: l10n.tr('bookings'),
             ),
             _NavItem(
               icon: Icons.person_outline,
               activeIcon: Icons.person,
-              label: 'Profile',
+              label: l10n.tr('profile'),
             ),
           ];
 

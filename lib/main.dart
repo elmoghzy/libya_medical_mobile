@@ -3,11 +3,15 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/di/injection_container.dart' as di;
+import 'core/localization/app_localizations.dart';
+import 'core/localization/locale_cubit.dart';
 import 'features/auth/logic/auth_cubit.dart';
 import 'features/auth/presentation/screens/splash_screen.dart';
+import 'features/queue/logic/clinic_queue_cubit.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,7 +23,9 @@ Future<void> main() async {
       await Firebase.initializeApp();
     } else {
       // On Linux/Windows Desktop: Skip Firebase (use Dev Mode instead)
-      debugPrint('⚠️ Firebase not initialized on ${Platform.operatingSystem}. Using Dev Mode.');
+      debugPrint(
+        '⚠️ Firebase not initialized on ${Platform.operatingSystem}. Using Dev Mode.',
+      );
     }
   } catch (e) {
     debugPrint('⚠️ Firebase initialization failed: $e');
@@ -36,13 +42,42 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => di.sl<AuthCubit>(),
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Libya Medical',
-        theme: lightTheme,
-        home: const SplashScreen(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => di.sl<AuthCubit>()),
+        BlocProvider(create: (_) => di.sl<LocaleCubit>()),
+        BlocProvider.value(value: di.sl<ClinicQueueCubit>()),
+      ],
+      child: BlocBuilder<LocaleCubit, Locale>(
+        builder: (context, locale) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            onGenerateTitle: (context) => context.l10n.tr('appName'),
+            theme: lightTheme,
+            locale: locale,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            localeResolutionCallback: (deviceLocale, supportedLocales) {
+              if (deviceLocale == null) {
+                return const Locale('en');
+              }
+
+              for (final supportedLocale in supportedLocales) {
+                if (supportedLocale.languageCode == deviceLocale.languageCode) {
+                  return supportedLocale;
+                }
+              }
+
+              return const Locale('en');
+            },
+            home: const SplashScreen(),
+          );
+        },
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../logic/auth_cubit.dart';
 import '../../logic/auth_state.dart';
@@ -158,7 +159,12 @@ class _OtpScreenState extends State<OtpScreen> {
           // OTP resent - update verification ID if needed
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Verification code sent successfully'),
+              content: Text(
+                context.locText(
+                  en: 'Verification code sent successfully',
+                  ar: 'تم إرسال رمز التحقق بنجاح',
+                ),
+              ),
               backgroundColor: AppColors.tertiary,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -177,7 +183,7 @@ class _OtpScreenState extends State<OtpScreen> {
               ),
               action: state.canRetry
                   ? SnackBarAction(
-                      label: 'Clear',
+                      label: context.locText(en: 'Clear', ar: 'مسح'),
                       textColor: Colors.white,
                       onPressed: _clearOtp,
                     )
@@ -214,8 +220,11 @@ class _OtpScreenState extends State<OtpScreen> {
                 children: [
                   const SizedBox(height: 24),
                   // Header
-                  const Text(
-                    'Verify Phone',
+                  Text(
+                    context.locText(
+                      en: 'Verify Phone',
+                      ar: 'تأكيد الهاتف',
+                    ),
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w700,
@@ -232,7 +241,12 @@ class _OtpScreenState extends State<OtpScreen> {
                         height: 1.4,
                       ),
                       children: [
-                        const TextSpan(text: 'Enter the 6-digit code sent to '),
+                        TextSpan(
+                          text: context.locText(
+                            en: 'Enter the 6-digit code sent to ',
+                            ar: 'أدخل الرمز المكوّن من 6 أرقام المرسل إلى ',
+                          ),
+                        ),
                         TextSpan(
                           text: _formatPhoneNumber(widget.phoneNumber),
                           style: const TextStyle(
@@ -325,9 +339,12 @@ class _OtpScreenState extends State<OtpScreen> {
                                 const SizedBox(width: 12),
                                 Text(
                                   state is OtpVerifying
-                                      ? 'Verifying...'
+                                      ? context.locText(
+                                          en: 'Verifying...',
+                                          ar: 'جارٍ التحقق...',
+                                        )
                                       : (state as AuthLoading).message ??
-                                            'Please wait...',
+                                            context.l10n.tr('pleaseWait'),
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.9),
                                   ),
@@ -336,8 +353,13 @@ class _OtpScreenState extends State<OtpScreen> {
                             )
                           : Row(
                               mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                Text('Verify'),
+                              children: [
+                                Text(
+                                  context.locText(
+                                    en: 'Verify',
+                                    ar: 'تحقق',
+                                  ),
+                                ),
                                 SizedBox(width: 8),
                                 Icon(Icons.check, size: 18),
                               ],
@@ -350,8 +372,11 @@ class _OtpScreenState extends State<OtpScreen> {
                     child: _canResend
                         ? TextButton(
                             onPressed: _resendOtp,
-                            child: const Text(
-                              'Resend Code',
+                            child: Text(
+                              context.locText(
+                                en: 'Resend Code',
+                                ar: 'إعادة إرسال الرمز',
+                              ),
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
@@ -363,7 +388,10 @@ class _OtpScreenState extends State<OtpScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                "Didn't receive code? ",
+                                context.locText(
+                                  en: "Didn't receive code? ",
+                                  ar: 'لم يصلك الرمز؟ ',
+                                ),
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: AppColors.textSecondary.withValues(
@@ -372,8 +400,11 @@ class _OtpScreenState extends State<OtpScreen> {
                                 ),
                               ),
                               Text(
-                                'Resend in ${_resendSeconds}s',
-                                style: const TextStyle(
+                                context.locText(
+                                  en: 'Resend in ${_resendSeconds}s',
+                                  ar: 'إعادة الإرسال خلال ${_resendSeconds}ث',
+                                ),
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.primary,
@@ -391,7 +422,10 @@ class _OtpScreenState extends State<OtpScreen> {
                         Navigator.pop(context);
                       },
                       child: Text(
-                        'Change Phone Number',
+                        context.locText(
+                          en: 'Change Phone Number',
+                          ar: 'تغيير رقم الهاتف',
+                        ),
                         style: TextStyle(
                           fontSize: 14,
                           color: AppColors.textSecondary.withValues(alpha: 0.7),

@@ -2,28 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../home/presentation/screens/patient_tab_navigation.dart';
 import '../../data/models/doctor_model.dart';
 import '../../logic/doctors_cubit.dart';
 import '../../logic/doctors_state.dart';
 import 'doctor_profile_screen.dart';
 
 class DoctorSearchScreen extends StatelessWidget {
-  const DoctorSearchScreen({super.key});
+  const DoctorSearchScreen({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => sl<DoctorsCubit>()..fetchDoctors(),
-      child: const _DoctorSearchView(),
+      child: _DoctorSearchView(embedded: embedded),
     );
   }
 }
 
 class _DoctorSearchView extends StatefulWidget {
-  const _DoctorSearchView();
+  const _DoctorSearchView({required this.embedded});
+
+  final bool embedded;
 
   @override
   State<_DoctorSearchView> createState() => _DoctorSearchViewState();
@@ -60,151 +66,161 @@ class _DoctorSearchViewState extends State<_DoctorSearchView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: Column(
-        children: [
-          const AppTopBar(showBackButton: true),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () => context.read<DoctorsCubit>().refreshDoctors(),
-              color: AppColors.primary,
-              child: CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 24),
-                          // Title
-                          const Text(
-                            'Find a Specialist',
-                            style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
-                              letterSpacing: -0.5,
+    final content = Column(
+      children: [
+        AppTopBar(showBackButton: !widget.embedded),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () => context.read<DoctorsCubit>().refreshDoctors(),
+            color: AppColors.primary,
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 24),
+                        Text(
+                          context.locText(
+                            en: 'Find a Specialist',
+                            ar: 'ابحث عن طبيب مختص',
+                          ),
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          context.locText(
+                            en:
+                                'Access the best healthcare providers across Libya with instant booking.',
+                            ar:
+                                'استعرض أفضل مقدمي الرعاية الصحية في ليبيا واحجز موعدك فورًا.',
+                          ),
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.8,
                             ),
+                            height: 1.4,
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Access the best healthcare providers across Libya with instant booking.',
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: AppColors.textSecondary.withValues(
-                                alpha: 0.8,
-                              ),
-                              height: 1.4,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          // Search bar
-                          _SearchBar(
-                            controller: _searchController,
-                            onChanged: _onSearchChanged,
-                          ),
-                          const SizedBox(height: 20),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 24),
+                        _SearchBar(
+                          controller: _searchController,
+                          onChanged: _onSearchChanged,
+                        ),
+                        const SizedBox(height: 20),
+                      ],
                     ),
                   ),
-                  // Filter chips
-                  SliverToBoxAdapter(
-                    child: BlocBuilder<DoctorsCubit, DoctorsState>(
-                      builder: (context, state) {
-                        if (state is DoctorsLoaded) {
-                          return _FilterChips(
-                            specialties: state.specialties,
-                            selectedFilter: _selectedFilter,
-                            onFilterSelected: _onFilterSelected,
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 28)),
-                  // Doctor list
-                  BlocBuilder<DoctorsCubit, DoctorsState>(
+                ),
+                SliverToBoxAdapter(
+                  child: BlocBuilder<DoctorsCubit, DoctorsState>(
                     builder: (context, state) {
-                      if (state is DoctorsLoading) {
-                        return const SliverFillRemaining(
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        );
-                      }
-
-                      if (state is DoctorsError) {
-                        return SliverFillRemaining(
-                          child: _ErrorView(
-                            message: state.message,
-                            onRetry: () =>
-                                context.read<DoctorsCubit>().fetchDoctors(),
-                          ),
-                        );
-                      }
-
                       if (state is DoctorsLoaded) {
-                        final doctors = state.displayDoctors;
-
-                        if (doctors.isEmpty) {
-                          return SliverFillRemaining(
-                            child: _EmptyView(
-                              hasFilters:
-                                  state.searchQuery.isNotEmpty ||
-                                  state.selectedSpecialty != null,
-                              onClearFilters: () {
-                                _searchController.clear();
-                                setState(() => _selectedFilter = null);
-                                context.read<DoctorsCubit>().clearFilters();
-                              },
-                            ),
-                          );
-                        }
-
-                        return SliverPadding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          sliver: SliverList(
-                            delegate: SliverChildBuilderDelegate((
-                              context,
-                              index,
-                            ) {
-                              if (index == doctors.length) {
-                                return const SizedBox(height: 100);
-                              }
-                              final doctor = doctors[index];
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 20),
-                                child: _DoctorCard(
-                                  doctor: doctor,
-                                  onViewProfile: () =>
-                                      _navigateToProfile(doctor),
-                                  onBook: () => _navigateToProfile(doctor),
-                                ),
-                              );
-                            }, childCount: doctors.length + 1),
-                          ),
+                        return _FilterChips(
+                          specialties: state.specialties,
+                          selectedFilter: _selectedFilter,
+                          onFilterSelected: _onFilterSelected,
                         );
                       }
-
-                      return const SliverToBoxAdapter(child: SizedBox.shrink());
+                      return const SizedBox.shrink();
                     },
                   ),
-                ],
-              ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 28)),
+                BlocBuilder<DoctorsCubit, DoctorsState>(
+                  builder: (context, state) {
+                    if (state is DoctorsLoading) {
+                      return const SliverFillRemaining(
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      );
+                    }
+
+                    if (state is DoctorsError) {
+                      return SliverFillRemaining(
+                        child: _ErrorView(
+                          message: state.message,
+                          onRetry: () =>
+                              context.read<DoctorsCubit>().fetchDoctors(),
+                        ),
+                      );
+                    }
+
+                    if (state is DoctorsLoaded) {
+                      final doctors = state.displayDoctors;
+
+                      if (doctors.isEmpty) {
+                        return SliverFillRemaining(
+                          child: _EmptyView(
+                            hasFilters:
+                                state.searchQuery.isNotEmpty ||
+                                state.selectedSpecialty != null,
+                            onClearFilters: () {
+                              _searchController.clear();
+                              setState(() => _selectedFilter = null);
+                              context.read<DoctorsCubit>().clearFilters();
+                            },
+                          ),
+                        );
+                      }
+
+                      return SliverPadding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            if (index == doctors.length) {
+                              return const SizedBox(height: 100);
+                            }
+                            final doctor = doctors[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 20),
+                              child: _DoctorCard(
+                                doctor: doctor,
+                                onViewProfile: () => _navigateToProfile(doctor),
+                                onBook: () => _navigateToProfile(doctor),
+                              ),
+                            );
+                          }, childCount: doctors.length + 1),
+                        ),
+                      );
+                    }
+
+                    return const SliverToBoxAdapter(child: SizedBox.shrink());
+                  },
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
+    );
+
+    if (widget.embedded) {
+      return content;
+    }
+
+    return Scaffold(
+      backgroundColor: AppColors.surface,
+      body: content,
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: 1,
         onTap: (index) {
-          if (index != 1) Navigator.pop(context);
+          if (index == 1) return;
+          navigateToPatientRootTab(context, index);
         },
       ),
     );
@@ -233,7 +249,10 @@ class _SearchBar extends StatelessWidget {
         controller: controller,
         onChanged: onChanged,
         decoration: InputDecoration(
-          hintText: 'Search by doctor name or specialty...',
+          hintText: context.locText(
+            en: 'Search by doctor name or specialty...',
+            ar: 'ابحث باسم الطبيب أو التخصص...',
+          ),
           prefixIcon: const Icon(Icons.search, color: AppColors.outline),
           suffixIcon: controller.text.isNotEmpty
               ? IconButton(
@@ -270,7 +289,11 @@ class _FilterChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final filters = ['All Specialists', ...specialties];
+    final allSpecialists = context.locText(
+      en: 'All Specialists',
+      ar: 'كل التخصصات',
+    );
+    final filters = [allSpecialists, ...specialties];
 
     return SizedBox(
       height: 40,
@@ -278,10 +301,10 @@ class _FilterChips extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: filters.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        separatorBuilder: (context, index) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final filter = filters[index];
-          final isAll = filter == 'All Specialists';
+          final isAll = filter == allSpecialists;
           final isSelected = isAll
               ? selectedFilter == null
               : filter == selectedFilter;
@@ -361,7 +384,8 @@ class _DoctorCard extends StatelessWidget {
                         child: Image.network(
                           doctor.imageUrl!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildInitials(),
+                          errorBuilder: (context, error, stackTrace) =>
+                              _buildInitials(),
                         ),
                       )
                     : _buildInitials(),
@@ -440,7 +464,10 @@ class _DoctorCard extends StatelessWidget {
                         if (doctor.isActive)
                           _DetailItem(
                             icon: Icons.check_circle,
-                            text: 'Available',
+                            text: context.locText(
+                              en: 'Available',
+                              ar: 'متاح',
+                            ),
                             color: AppColors.tertiaryFixedDim,
                           ),
                       ],
@@ -467,8 +494,8 @@ class _DoctorCard extends StatelessWidget {
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: const Text(
-                    'View Profile',
+                  child: Text(
+                    context.locText(en: 'View Profile', ar: 'عرض الملف'),
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -481,8 +508,8 @@ class _DoctorCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     minimumSize: Size.zero,
                   ),
-                  child: const Text(
-                    'Book Now',
+                  child: Text(
+                    context.locText(en: 'Book Now', ar: 'احجز الآن'),
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -572,7 +599,7 @@ class _ErrorView extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Retry'),
+              label: Text(context.l10n.tr('retry')),
             ),
           ],
         ),
@@ -605,8 +632,14 @@ class _EmptyView extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               hasFilters
-                  ? 'No doctors match your search criteria'
-                  : 'No doctors available at the moment',
+                  ? context.locText(
+                      en: 'No doctors match your search criteria',
+                      ar: 'لا يوجد أطباء يطابقون معايير البحث',
+                    )
+                  : context.locText(
+                      en: 'No doctors available at the moment',
+                      ar: 'لا يوجد أطباء متاحون حاليًا',
+                    ),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -617,7 +650,9 @@ class _EmptyView extends StatelessWidget {
               const SizedBox(height: 24),
               OutlinedButton(
                 onPressed: onClearFilters,
-                child: const Text('Clear Filters'),
+                child: Text(
+                  context.locText(en: 'Clear Filters', ar: 'مسح الفلاتر'),
+                ),
               ),
             ],
           ],

@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../localization/locale_cubit.dart';
 import '../../features/auth/data/auth_remote_data_source.dart';
 import '../../features/auth/logic/auth_cubit.dart';
 import '../../features/bookings/data/datasources/bookings_remote_data_source.dart';
@@ -8,6 +9,7 @@ import '../../features/bookings/logic/bookings_cubit.dart';
 import '../../features/doctors/data/datasources/doctors_remote_data_source.dart';
 import '../../features/doctors/logic/doctor_details_cubit.dart';
 import '../../features/doctors/logic/doctors_cubit.dart';
+import '../../features/queue/logic/clinic_queue_cubit.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -31,9 +33,13 @@ Future<void> initDependencies() async {
       rethrow;
     }
   });
-  
-  sl.registerLazySingleton<IDoctorsRemoteDataSource>(() => DoctorsRemoteDataSource());
-  sl.registerLazySingleton<IBookingsRemoteDataSource>(() => BookingsRemoteDataSource());
+
+  sl.registerLazySingleton<IDoctorsRemoteDataSource>(
+    () => DoctorsRemoteDataSource(),
+  );
+  sl.registerLazySingleton<IBookingsRemoteDataSource>(
+    () => BookingsRemoteDataSource(),
+  );
 
   // ============ Cubits ============
   sl.registerFactory<AuthCubit>(
@@ -44,20 +50,20 @@ Future<void> initDependencies() async {
   );
 
   sl.registerFactory<DoctorsCubit>(
-    () => DoctorsCubit(
-      doctorsDataSource: sl<IDoctorsRemoteDataSource>(),
-    ),
+    () => DoctorsCubit(doctorsDataSource: sl<IDoctorsRemoteDataSource>()),
   );
 
   sl.registerFactory<DoctorDetailsCubit>(
-    () => DoctorDetailsCubit(
-      doctorsDataSource: sl<IDoctorsRemoteDataSource>(),
-    ),
+    () => DoctorDetailsCubit(doctorsDataSource: sl<IDoctorsRemoteDataSource>()),
   );
 
   sl.registerFactory<BookingsCubit>(
-    () => BookingsCubit(
-      bookingsDataSource: sl<IBookingsRemoteDataSource>(),
-    ),
+    () => BookingsCubit(bookingsDataSource: sl<IBookingsRemoteDataSource>()),
   );
+
+  sl.registerLazySingleton<LocaleCubit>(
+    () => LocaleCubit(sl<SharedPreferences>()),
+  );
+
+  sl.registerLazySingleton<ClinicQueueCubit>(() => ClinicQueueCubit());
 }

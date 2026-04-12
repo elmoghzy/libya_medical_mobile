@@ -1,22 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../localization/app_localizations.dart';
+import '../localization/locale_cubit.dart';
 import '../theme/app_colors.dart';
 
 class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
   const AppTopBar({
     super.key,
-    this.title = 'Libya Medical',
+    this.title,
     this.showBackButton = false,
     this.showNotification = true,
     this.showAvatar = true,
+    this.showLanguageToggle = true,
     this.onNotificationTap,
     this.avatarUrl,
   });
 
-  final String title;
+  final String? title;
   final bool showBackButton;
   final bool showNotification;
   final bool showAvatar;
+  final bool showLanguageToggle;
   final VoidCallback? onNotificationTap;
   final String? avatarUrl;
 
@@ -25,6 +30,9 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final resolvedTitle = title ?? l10n.tr('appName');
+
     return SafeArea(
       bottom: false,
       child: Container(
@@ -74,7 +82,7 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             const SizedBox(width: 12),
             Text(
-              title,
+              resolvedTitle,
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
@@ -83,6 +91,34 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
             const Spacer(),
+            if (showLanguageToggle)
+              PopupMenuButton<String>(
+                tooltip: l10n.tr('language'),
+                initialValue: l10n.locale.languageCode,
+                onSelected: (languageCode) {
+                  context.read<LocaleCubit>().setLocale(Locale(languageCode));
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem<String>(
+                    value: 'ar',
+                    child: _LanguageMenuItem(
+                      label: 'العربية',
+                      isSelected: l10n.locale.languageCode == 'ar',
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'en',
+                    child: _LanguageMenuItem(
+                      label: 'English',
+                      isSelected: l10n.locale.languageCode == 'en',
+                    ),
+                  ),
+                ],
+                icon: const Icon(
+                  Icons.translate,
+                  color: AppColors.textSecondary,
+                ),
+              ),
             if (showNotification)
               IconButton(
                 icon: const Icon(
@@ -94,6 +130,35 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _LanguageMenuItem extends StatelessWidget {
+  const _LanguageMenuItem({required this.label, required this.isSelected});
+
+  final String label;
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? AppColors.primary : AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(width: 20),
+        Icon(
+          isSelected ? Icons.check : Icons.circle_outlined,
+          size: 18,
+          color: isSelected ? AppColors.primary : AppColors.outline,
+        ),
+      ],
     );
   }
 }

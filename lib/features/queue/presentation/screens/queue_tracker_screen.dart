@@ -1,9 +1,14 @@
-import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../../core/widgets/bottom_nav_bar.dart';
+import '../../../home/presentation/screens/patient_tab_navigation.dart';
+import '../../logic/clinic_queue_cubit.dart';
 
 class QueueTrackerScreen extends StatefulWidget {
   const QueueTrackerScreen({super.key});
@@ -14,7 +19,7 @@ class QueueTrackerScreen extends StatefulWidget {
 
 class _QueueTrackerScreenState extends State<QueueTrackerScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _pulseController;
+  late final AnimationController _pulseController;
 
   @override
   void initState() {
@@ -33,77 +38,181 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: Column(
-        children: [
-          const AppTopBar(showBackButton: true),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  const SizedBox(height: 24),
-                  // Main queue status card
-                  _buildQueueStatusCard(),
-                  const SizedBox(height: 24),
-                  // Queue details row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildInfoCard(
-                          'Est. Wait',
-                          '~12 min',
-                          Icons.timer_outlined,
-                          AppColors.warning,
+    return BlocBuilder<ClinicQueueCubit, ClinicQueueState>(
+      builder: (context, queueState) {
+        final queueCubit = context.read<ClinicQueueCubit>();
+        final patient = queueState.trackedPatient;
+
+        return Scaffold(
+          backgroundColor: AppColors.surface,
+          body: Column(
+            children: [
+              const AppTopBar(showBackButton: true),
+              Expanded(
+                child: patient == null
+                    ? _buildEmptyState()
+                    : patient.status == ClinicQueuePatientStatus.completed
+                    ? _buildEmptyState(isCompleted: true)
+                    : SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 24),
+                            _buildQueueStatusCard(
+                              queueCubit,
+                              queueState,
+                              patient,
+                            ),
+                            const SizedBox(height: 24),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildInfoCard(
+                                    context.locText(
+                                      en: 'Est. Wait',
+                                      ar: 'الانتظار المتوقع',
+                                    ),
+                                    patient.status ==
+                                            ClinicQueuePatientStatus.inProgress
+                                        ? context.locText(en: 'Now', ar: 'الآن')
+                                        : context.locText(
+                                            en: '~${queueCubit.waitMinutesFor(patient.id)} min',
+                                            ar: '~${queueCubit.waitMinutesFor(patient.id)} دقيقة',
+                                          ),
+                                    Icons.timer_outlined,
+                                    AppColors.warning,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildInfoCard(
+                                    context.locText(
+                                      en: 'Queue #',
+                                      ar: 'رقم الدور',
+                                    ),
+                                    '${patient.queueNumber}',
+                                    Icons.confirmation_number_outlined,
+                                    AppColors.primary,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildInfoCard(
+                                    context.locText(en: 'Room', ar: 'الغرفة'),
+                                    queueState.roomLabel,
+                                    Icons.meeting_room_outlined,
+                                    AppColors.tertiary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+                            _buildQueueProgress(
+                              queueCubit,
+                              queueState,
+                              patient,
+                            ),
+                            const SizedBox(height: 24),
+                            _buildDoctorInfo(queueState),
+                            const SizedBox(height: 24),
+                            _buildTipsSection(queueCubit, patient),
+                            const SizedBox(height: 100),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildInfoCard(
-                          'Queue #',
-                          '7',
-                          Icons.confirmation_number_outlined,
-                          AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildInfoCard(
-                          'Room',
-                          'A-104',
-                          Icons.meeting_room_outlined,
-                          AppColors.tertiary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  // Queue progress
-                  _buildQueueProgress(),
-                  const SizedBox(height: 24),
-                  // Doctor info
-                  _buildDoctorInfo(),
-                  const SizedBox(height: 24),
-                  // Tips section
-                  _buildTipsSection(),
-                  const SizedBox(height: 100),
-                ],
+              ),
+            ],
+          ),
+          bottomNavigationBar: AppBottomNavBar(
+            currentIndex: 2,
+            onTap: (index) {
+              if (index == 2) {
+                return;
+              }
+              navigateToPatientRootTab(context, index);
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState({bool isCompleted = false}) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.event_available_outlined,
+              size: 56,
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              isCompleted
+                  ? context.locText(
+                      en: 'Your consultation has been completed',
+                      ar: 'اكتملت استشارتك بنجاح',
+                    )
+                  : context.locText(
+                      en: 'No active queue right now',
+                      ar: 'لا يوجد طابور نشط الآن',
+                    ),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
               ),
             ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: 2,
-        onTap: (index) {
-          if (index != 2) Navigator.pop(context);
-        },
+            const SizedBox(height: 8),
+            Text(
+              isCompleted
+                  ? context.locText(
+                      en: 'You can return to bookings for your next appointment.',
+                      ar: 'يمكنك العودة إلى الحجوزات لمراجعة موعدك التالي.',
+                    )
+                  : context.locText(
+                      en: 'Queue updates will appear here once your appointment is active.',
+                      ar: 'ستظهر تحديثات الطابور هنا عندما يصبح موعدك نشطًا.',
+                    ),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary.withValues(alpha: 0.75),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildQueueStatusCard() {
+  Widget _buildQueueStatusCard(
+    ClinicQueueCubit queueCubit,
+    ClinicQueueState queueState,
+    ClinicQueuePatient patient,
+  ) {
+    final patientsAhead = queueCubit.patientsAheadOf(patient.id);
+    final totalPending = queueState.orderedPatients
+        .where((item) => item.status != ClinicQueuePatientStatus.completed)
+        .length;
+    final estimatedStart = queueCubit.estimatedStartMinutesFor(patient.id);
+    final delayMinutes = queueCubit.delayMinutesFor(patient.id);
+
+    final headline = patient.status == ClinicQueuePatientStatus.inProgress
+        ? context.locText(en: 'It is your turn now', ar: 'حان دورك الآن')
+        : patientsAhead == 0
+        ? context.locText(
+            en: 'You are next in line',
+            ar: 'أنت التالي في الطابور',
+          )
+        : context.locText(
+            en: '$patientsAhead patients ahead of you',
+            ar: 'يوجد $patientsAhead مرضى قبلك',
+          );
+
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
@@ -123,7 +232,6 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
       ),
       child: Column(
         children: [
-          // Badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
@@ -161,9 +269,12 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
                   },
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  'LIVE TRACKING',
-                  style: TextStyle(
+                Text(
+                  context.locText(
+                    en: 'LIVE QUEUE TRACKING',
+                    ar: 'تتبع مباشر للطابور',
+                  ),
+                  style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1,
@@ -174,11 +285,9 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
             ),
           ),
           const SizedBox(height: 24),
-          // Position number
           Stack(
             alignment: Alignment.center,
             children: [
-              // Outer ring
               AnimatedBuilder(
                 animation: _pulseController,
                 builder: (context, child) {
@@ -202,7 +311,6 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
                   );
                 },
               ),
-              // Inner circle
               Container(
                 width: 130,
                 height: 130,
@@ -218,7 +326,7 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'POSITION',
+                      context.locText(en: 'POSITION', ar: 'الترتيب'),
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
@@ -226,9 +334,9 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
                         color: Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
-                    const Text(
-                      '3',
-                      style: TextStyle(
+                    Text(
+                      '${patientsAhead + 1}',
+                      style: const TextStyle(
                         fontSize: 56,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
@@ -236,7 +344,10 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
                       ),
                     ),
                     Text(
-                      'of 12',
+                      context.locText(
+                        en: 'of $totalPending',
+                        ar: 'من $totalPending',
+                      ),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -249,10 +360,10 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
             ],
           ),
           const SizedBox(height: 24),
-          // Status text
-          const Text(
-            'Almost Your Turn!',
-            style: TextStyle(
+          Text(
+            headline,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
               color: Colors.white,
@@ -260,12 +371,37 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            '2 patients ahead of you',
+            context.locText(
+              en: 'Expected ${queueCubit.formatClock(estimatedStart)} in room ${queueState.roomLabel}',
+              ar: 'الموعد المتوقع ${queueCubit.formatClock(estimatedStart, useArabicPeriod: true)} في الغرفة ${queueState.roomLabel}',
+            ),
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.8),
+              color: Colors.white.withValues(alpha: 0.82),
             ),
           ),
+          if (delayMinutes > 0) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                context.locText(
+                  en: 'Updated due to doctor delay: +$delayMinutes min',
+                  ar: 'تم تحديث الموعد بسبب تأخر الطبيب: +$delayMinutes دقيقة',
+                ),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -324,7 +460,18 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
     );
   }
 
-  Widget _buildQueueProgress() {
+  Widget _buildQueueProgress(
+    ClinicQueueCubit queueCubit,
+    ClinicQueueState queueState,
+    ClinicQueuePatient patient,
+  ) {
+    final completed = queueCubit.completedCount;
+    final remaining = queueCubit.totalPatients - completed;
+    final progress = queueCubit.totalPatients == 0
+        ? 0.0
+        : completed / queueCubit.totalPatients;
+    final estimatedStart = queueCubit.estimatedStartMinutesFor(patient.id);
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -341,20 +488,19 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Queue Progress',
-            style: TextStyle(
+          Text(
+            context.locText(en: 'Queue Progress', ar: 'تقدّم الطابور'),
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 20),
-          // Progress bar
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
-              value: 0.75,
+              value: progress.clamp(0.0, 1.0),
               minHeight: 12,
               backgroundColor: AppColors.surfaceContainerLow,
               valueColor: const AlwaysStoppedAnimation<Color>(
@@ -367,15 +513,21 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '9 patients served',
+                context.locText(
+                  en: '$completed patients served',
+                  ar: 'تمت خدمة $completed مرضى',
+                ),
                 style: TextStyle(
                   fontSize: 12,
                   color: AppColors.textSecondary.withValues(alpha: 0.7),
                 ),
               ),
               Text(
-                '3 remaining',
-                style: TextStyle(
+                context.locText(
+                  en: '$remaining remaining',
+                  ar: 'المتبقي $remaining',
+                ),
+                style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: AppColors.tertiary,
@@ -384,13 +536,25 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
             ],
           ),
           const SizedBox(height: 24),
-          // Timeline
-          _buildTimelineItem('Check-in', '09:15 AM', true, true),
-          _buildTimelineItem('Waiting', '09:20 AM', true, true),
           _buildTimelineItem(
-            'Consultation',
-            'Expected ~09:45 AM',
-            false,
+            context.locText(en: 'Check-in', ar: 'تسجيل الحضور'),
+            patient.checkInTime,
+            true,
+            true,
+          ),
+          _buildTimelineItem(
+            context.locText(en: 'Scheduled Time', ar: 'وقت الحجز'),
+            patient.scheduledTime,
+            true,
+            true,
+          ),
+          _buildTimelineItem(
+            context.locText(en: 'Expected Consultation', ar: 'الوقت المتوقع'),
+            context.locText(
+              en: queueCubit.formatClock(estimatedStart),
+              ar: queueCubit.formatClock(estimatedStart, useArabicPeriod: true),
+            ),
+            patient.status == ClinicQueuePatientStatus.inProgress,
             false,
           ),
         ],
@@ -469,7 +633,7 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
     );
   }
 
-  Widget _buildDoctorInfo() {
+  Widget _buildDoctorInfo(ClinicQueueState queueState) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -499,9 +663,11 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Dr. Ahmed Hassan',
-                  style: TextStyle(
+                Text(
+                  context.l10n.isArabic
+                      ? queueState.doctorNameAr
+                      : queueState.doctorNameEn,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -509,7 +675,9 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Cardiologist • Room A-104',
+                  context.l10n.isArabic
+                      ? '${queueState.specialtyAr} • الغرفة ${queueState.roomLabel}'
+                      : '${queueState.specialtyEn} • Room ${queueState.roomLabel}',
                   style: TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary.withValues(alpha: 0.7),
@@ -524,27 +692,13 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
               color: AppColors.success.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.tertiary,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                const Text(
-                  'Available',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.tertiary,
-                  ),
-                ),
-              ],
+            child: Text(
+              context.locText(en: 'Available', ar: 'متاح'),
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.tertiary,
+              ),
             ),
           ),
         ],
@@ -552,7 +706,13 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
     );
   }
 
-  Widget _buildTipsSection() {
+  Widget _buildTipsSection(
+    ClinicQueueCubit queueCubit,
+    ClinicQueuePatient patient,
+  ) {
+    final isInProgress = patient.status == ClinicQueuePatientStatus.inProgress;
+    final estimatedStart = queueCubit.estimatedStartMinutesFor(patient.id);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -570,9 +730,9 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
                 size: 20,
               ),
               const SizedBox(width: 10),
-              const Text(
-                'While You Wait',
-                style: TextStyle(
+              Text(
+                context.locText(en: 'What Happens Next', ar: 'ماذا سيحدث الآن'),
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: AppColors.tertiary,
@@ -582,12 +742,30 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen>
           ),
           const SizedBox(height: 16),
           _buildTipItem(
-            'Stay nearby - You will be notified when it\'s your turn',
+            isInProgress
+                ? context.locText(
+                    en: 'You have been called. Head to the clinic room now.',
+                    ar: 'تم استدعاؤك. توجّه الآن إلى غرفة العيادة.',
+                  )
+                : context.locText(
+                    en: 'If the doctor is delayed, your expected time updates automatically.',
+                    ar: 'إذا تأخر الطبيب، سيتم تحديث الوقت المتوقع لموعدك تلقائيًا.',
+                  ),
           ),
           const SizedBox(height: 10),
-          _buildTipItem('Have your medical records ready for the consultation'),
+          _buildTipItem(
+            context.locText(
+              en: 'Current expected time: ${queueCubit.formatClock(estimatedStart)}',
+              ar: 'الوقت المتوقع الحالي: ${queueCubit.formatClock(estimatedStart, useArabicPeriod: true)}',
+            ),
+          ),
           const SizedBox(height: 10),
-          _buildTipItem('Prepare questions you want to ask the doctor'),
+          _buildTipItem(
+            context.locText(
+              en: 'Keep notifications enabled to receive immediate call alerts.',
+              ar: 'اترك الإشعارات مفعلة حتى يصلك تنبيه الاستدعاء فورًا.',
+            ),
+          ),
         ],
       ),
     );

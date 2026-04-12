@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 
 class ScheduleManagerScreen extends StatefulWidget {
-  const ScheduleManagerScreen({super.key});
+  const ScheduleManagerScreen({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   State<ScheduleManagerScreen> createState() => _ScheduleManagerScreenState();
@@ -12,17 +15,8 @@ class ScheduleManagerScreen extends StatefulWidget {
 
 class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
   int _selectedDay = 3; // Thursday
-
-  final List<String> _weekDays = [
-    'Mon',
-    'Tue',
-    'Wed',
-    'Thu',
-    'Fri',
-    'Sat',
-    'Sun',
-  ];
   final List<int> _dates = [21, 22, 23, 24, 25, 26, 27];
+  final DateTime _weekStart = DateTime(2024, 10, 21);
 
   final Map<int, List<Map<String, dynamic>>> _schedule = {
     0: [], // Monday
@@ -49,11 +43,16 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: Column(
         children: [
-          const AppTopBar(title: 'Schedule'),
+          AppTopBar(
+            title: l10n.tr('schedule'),
+            showBackButton: !widget.embedded,
+          ),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -86,36 +85,44 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
         onPressed: _showAddSlotDialog,
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Add Slot', style: TextStyle(color: Colors.white)),
+        label: Text(
+          l10n.tr('addTimeSlot'),
+          style: const TextStyle(color: Colors.white),
+        ),
       ),
     );
   }
 
   Widget _buildHeader() {
+    final l10n = context.l10n;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Schedule Manager',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.tr('scheduleManagerTitle'),
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Set your weekly availability',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary.withValues(alpha: 0.7),
+              const SizedBox(height: 4),
+              Text(
+                l10n.tr('scheduleManagerSubtitle'),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary.withValues(alpha: 0.7),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+        const SizedBox(width: 12),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
@@ -131,8 +138,8 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
                 size: 18,
               ),
               const SizedBox(width: 8),
-              const Text(
-                'Published',
+              Text(
+                l10n.tr('published'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -147,6 +154,8 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
   }
 
   Widget _buildWeekSelector() {
+    final l10n = context.l10n;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -170,8 +179,8 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
           ),
           Column(
             children: [
-              const Text(
-                'October 2024',
+              Text(
+                _getMonthYearLabel(l10n),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -180,7 +189,7 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
               ),
               const SizedBox(height: 2),
               Text(
-                'Week 43 • Oct 21 - Oct 27',
+                _getWeekRangeLabel(l10n),
                 style: TextStyle(
                   fontSize: 12,
                   color: AppColors.textSecondary.withValues(alpha: 0.7),
@@ -199,6 +208,8 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
   }
 
   Widget _buildDayPicker() {
+    final weekDays = _getWeekdayShortLabels(context.l10n);
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -230,7 +241,7 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
                 child: Column(
                   children: [
                     Text(
-                      _weekDays[index],
+                      weekDays[index],
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -272,6 +283,7 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
   }
 
   Widget _buildScheduleDisplay() {
+    final l10n = context.l10n;
     final daySlots = _schedule[_selectedDay] ?? [];
 
     return Column(
@@ -281,7 +293,7 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '${_weekDays[_selectedDay]}, Oct ${_dates[_selectedDay]}',
+              _getSelectedDateLabel(l10n),
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -292,7 +304,7 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
               TextButton.icon(
                 onPressed: () {},
                 icon: const Icon(Icons.edit, size: 16),
-                label: const Text('Edit All'),
+                label: Text(l10n.tr('editAll')),
               ),
           ],
         ),
@@ -311,6 +323,8 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
   }
 
   Widget _buildEmptyState() {
+    final l10n = context.l10n;
+
     return Container(
       padding: const EdgeInsets.all(40),
       decoration: BoxDecoration(
@@ -337,8 +351,8 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'No Availability Set',
+          Text(
+            l10n.tr('noAvailabilityTitle'),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -347,7 +361,7 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'You haven\'t set any working hours for this day.\nTap the button below to add a time slot.',
+            l10n.tr('noAvailabilityMessage'),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
@@ -359,7 +373,7 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
           OutlinedButton.icon(
             onPressed: _showAddSlotDialog,
             icon: const Icon(Icons.add),
-            label: const Text('Add Time Slot'),
+            label: Text(l10n.tr('addTimeSlot')),
           ),
         ],
       ),
@@ -367,6 +381,7 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
   }
 
   Widget _buildTimeSlot(Map<String, dynamic> slot) {
+    final l10n = context.l10n;
     final type = slot['type'] as String;
     Color typeColor;
     String typeLabel;
@@ -375,17 +390,17 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
     switch (type) {
       case 'surgery':
         typeColor = AppColors.error;
-        typeLabel = 'Surgery';
+        typeLabel = l10n.tr('surgery');
         typeIcon = Icons.medical_services;
         break;
       case 'teleconsult':
         typeColor = AppColors.tertiary;
-        typeLabel = 'Teleconsult';
+        typeLabel = l10n.tr('teleconsult');
         typeIcon = Icons.video_call;
         break;
       default:
         typeColor = AppColors.primary;
-        typeLabel = 'Clinic Hours';
+        typeLabel = l10n.tr('clinicHours');
         typeIcon = Icons.local_hospital;
     }
 
@@ -486,23 +501,23 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'edit',
                 child: Row(
                   children: [
-                    Icon(Icons.edit, size: 18),
-                    SizedBox(width: 10),
-                    Text('Edit'),
+                    const Icon(Icons.edit, size: 18),
+                    const SizedBox(width: 10),
+                    Text(l10n.tr('edit')),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'duplicate',
                 child: Row(
                   children: [
-                    Icon(Icons.copy, size: 18),
-                    SizedBox(width: 10),
-                    Text('Duplicate'),
+                    const Icon(Icons.copy, size: 18),
+                    const SizedBox(width: 10),
+                    Text(l10n.tr('duplicate')),
                   ],
                 ),
               ),
@@ -516,8 +531,8 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
                       color: AppColors.error,
                     ),
                     const SizedBox(width: 10),
-                    const Text(
-                      'Delete',
+                    Text(
+                      l10n.tr('delete'),
                       style: TextStyle(color: AppColors.error),
                     ),
                   ],
@@ -531,6 +546,8 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
   }
 
   Widget _buildQuickStats() {
+    final l10n = context.l10n;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -547,8 +564,8 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'This Week\'s Summary',
+          Text(
+            l10n.tr('thisWeeksSummary'),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -559,19 +576,27 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
           Row(
             children: [
               Expanded(
-                child: _buildStatItem('Total Hours', '28h', Icons.schedule),
+                child: _buildStatItem(
+                  l10n.tr('totalHours'),
+                  _formatHourValue(28),
+                  Icons.schedule,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStatItem(
-                  'Working Days',
+                  l10n.tr('workingDays'),
                   '5',
                   Icons.calendar_today,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _buildStatItem('Slots', '8', Icons.event_available),
+                child: _buildStatItem(
+                  l10n.tr('slots'),
+                  '8',
+                  Icons.event_available,
+                ),
               ),
             ],
           ),
@@ -613,6 +638,7 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
   }
 
   String _calculateDuration(String start, String end) {
+    final l10n = context.l10n;
     final startParts = start.split(':');
     final endParts = end.split(':');
 
@@ -625,12 +651,20 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
     final minutes = durationMinutes % 60;
 
     if (minutes == 0) {
-      return '${hours}h duration';
+      return l10n.trWithArgs('hoursShort', {'hours': '$hours'});
     }
-    return '${hours}h ${minutes}m duration';
+    return l10n.trWithArgs('hoursMinutesShort', {
+      'hours': '$hours',
+      'minutes': '$minutes',
+    });
+  }
+
+  String _formatHourValue(int hours) {
+    return context.l10n.trWithArgs('hoursShort', {'hours': '$hours'});
   }
 
   void _showAddSlotDialog() {
+    final l10n = context.l10n;
     String selectedType = 'clinic';
     TimeOfDay startTime = const TimeOfDay(hour: 9, minute: 0);
     TimeOfDay endTime = const TimeOfDay(hour: 12, minute: 0);
@@ -642,15 +676,15 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          title: const Text('Add Time Slot'),
+          title: Text(l10n.tr('addTimeSlot')),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Type selector
-                const Text(
-                  'SLOT TYPE',
+                Text(
+                  l10n.tr('slotType'),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -662,16 +696,24 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
                 Wrap(
                   spacing: 8,
                   children: [
-                    _buildTypeOption('Clinic', 'clinic', selectedType, (value) {
-                      setDialogState(() => selectedType = value);
-                    }),
-                    _buildTypeOption('Surgery', 'surgery', selectedType, (
-                      value,
-                    ) {
-                      setDialogState(() => selectedType = value);
-                    }),
                     _buildTypeOption(
-                      'Teleconsult',
+                      l10n.tr('clinic'),
+                      'clinic',
+                      selectedType,
+                      (value) {
+                        setDialogState(() => selectedType = value);
+                      },
+                    ),
+                    _buildTypeOption(
+                      l10n.tr('surgery'),
+                      'surgery',
+                      selectedType,
+                      (value) {
+                        setDialogState(() => selectedType = value);
+                      },
+                    ),
+                    _buildTypeOption(
+                      l10n.tr('teleconsult'),
                       'teleconsult',
                       selectedType,
                       (value) {
@@ -688,8 +730,8 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'START TIME',
+                          Text(
+                            l10n.tr('startTime'),
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
@@ -742,8 +784,8 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'END TIME',
+                          Text(
+                            l10n.tr('endTime'),
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
@@ -795,8 +837,8 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
                 ),
                 const SizedBox(height: 24),
                 // Repeat options
-                const Text(
-                  'REPEAT',
+                Text(
+                  l10n.tr('repeat'),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -821,8 +863,8 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           alignment: Alignment.center,
-                          child: const Text(
-                            'This Day Only',
+                          child: Text(
+                            l10n.tr('thisDayOnly'),
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -836,7 +878,7 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           alignment: Alignment.center,
                           child: Text(
-                            'Every Week',
+                            l10n.tr('everyWeek'),
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -856,19 +898,131 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(l10n.tr('cancel')),
             ),
             ElevatedButton(
               onPressed: () {
                 // Add slot logic
                 Navigator.pop(context);
               },
-              child: const Text('Add Slot'),
+              child: Text(l10n.tr('addTimeSlot')),
             ),
           ],
         ),
       ),
     );
+  }
+
+  List<String> _getWeekdayShortLabels(AppLocalizations l10n) => l10n.isArabic
+      ? ['اثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت', 'أحد']
+      : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  List<String> _getWeekdayLongLabels(AppLocalizations l10n) => l10n.isArabic
+      ? [
+          'الاثنين',
+          'الثلاثاء',
+          'الأربعاء',
+          'الخميس',
+          'الجمعة',
+          'السبت',
+          'الأحد',
+        ]
+      : [
+          'Monday',
+          'Tuesday',
+          'Wednesday',
+          'Thursday',
+          'Friday',
+          'Saturday',
+          'Sunday',
+        ];
+
+  List<String> _getMonthShortLabels(AppLocalizations l10n) => l10n.isArabic
+      ? [
+          'يناير',
+          'فبراير',
+          'مارس',
+          'أبريل',
+          'مايو',
+          'يونيو',
+          'يوليو',
+          'أغسطس',
+          'سبتمبر',
+          'أكتوبر',
+          'نوفمبر',
+          'ديسمبر',
+        ]
+      : [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec',
+        ];
+
+  List<String> _getMonthLongLabels(AppLocalizations l10n) => l10n.isArabic
+      ? [
+          'يناير',
+          'فبراير',
+          'مارس',
+          'أبريل',
+          'مايو',
+          'يونيو',
+          'يوليو',
+          'أغسطس',
+          'سبتمبر',
+          'أكتوبر',
+          'نوفمبر',
+          'ديسمبر',
+        ]
+      : [
+          'January',
+          'February',
+          'March',
+          'April',
+          'May',
+          'June',
+          'July',
+          'August',
+          'September',
+          'October',
+          'November',
+          'December',
+        ];
+
+  String _getMonthYearLabel(AppLocalizations l10n) {
+    final month = _getMonthLongLabels(l10n)[_weekStart.month - 1];
+    return '$month ${_weekStart.year}';
+  }
+
+  String _getWeekRangeLabel(AppLocalizations l10n) {
+    final startMonth = _getMonthShortLabels(l10n)[_weekStart.month - 1];
+    final weekEnd = _weekStart.add(const Duration(days: 6));
+
+    if (l10n.isArabic) {
+      return '${l10n.tr('week')} 43 • ${_weekStart.day} $startMonth - ${weekEnd.day} $startMonth';
+    }
+
+    return '${l10n.tr('week')} 43 • $startMonth ${_weekStart.day} - $startMonth ${weekEnd.day}';
+  }
+
+  String _getSelectedDateLabel(AppLocalizations l10n) {
+    final weekday = _getWeekdayLongLabels(l10n)[_selectedDay];
+    final month = _getMonthShortLabels(l10n)[_weekStart.month - 1];
+    final date = _dates[_selectedDay];
+
+    if (l10n.isArabic) {
+      return '$weekday، $date $month';
+    }
+
+    return '$weekday, $month $date';
   }
 
   Widget _buildTypeOption(

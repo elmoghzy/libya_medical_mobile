@@ -3,10 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../bookings/presentation/screens/booking_confirmation_screen.dart';
+import '../../../home/presentation/screens/patient_tab_navigation.dart';
 import '../../data/models/doctor_model.dart';
 import '../../logic/doctor_details_cubit.dart';
 import '../../logic/doctors_state.dart';
@@ -24,15 +26,10 @@ class DoctorProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => sl<DoctorDetailsCubit>()
-        ..fetchDoctorDetailsAndSlots(
-          doctorId,
-          _getTodayDate(),
-        ),
-      child: _DoctorProfileView(
-        doctorId: doctorId,
-        fallbackName: doctorName,
-      ),
+      create: (_) =>
+          sl<DoctorDetailsCubit>()
+            ..fetchDoctorDetailsAndSlots(doctorId, _getTodayDate()),
+      child: _DoctorProfileView(doctorId: doctorId, fallbackName: doctorName),
     );
   }
 
@@ -42,10 +39,7 @@ class DoctorProfileScreen extends StatelessWidget {
 }
 
 class _DoctorProfileView extends StatefulWidget {
-  const _DoctorProfileView({
-    required this.doctorId,
-    this.fallbackName,
-  });
+  const _DoctorProfileView({required this.doctorId, this.fallbackName});
 
   final int doctorId;
   final String? fallbackName;
@@ -57,7 +51,7 @@ class _DoctorProfileView extends StatefulWidget {
 class _DoctorProfileViewState extends State<_DoctorProfileView> {
   late DateTime _selectedDate;
   String? _selectedSlot;
-  
+
   // Generate next 7 days for date picker
   late List<DateTime> _availableDates;
 
@@ -130,7 +124,8 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: 1,
         onTap: (index) {
-          if (index != 1) Navigator.pop(context);
+          if (index == 1) return;
+          navigateToPatientRootTab(context, index);
         },
       ),
     );
@@ -177,13 +172,15 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
                     onPressed: () {
-                      context.read<DoctorDetailsCubit>().fetchDoctorDetailsAndSlots(
-                        widget.doctorId,
-                        _formatDateForApi(_selectedDate),
-                      );
+                      context
+                          .read<DoctorDetailsCubit>()
+                          .fetchDoctorDetailsAndSlots(
+                            widget.doctorId,
+                            _formatDateForApi(_selectedDate),
+                          );
                     },
                     icon: const Icon(Icons.refresh, size: 18),
-                    label: const Text('Retry'),
+                    label: Text(context.l10n.tr('retry')),
                   ),
                 ],
               ),
@@ -194,7 +191,11 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
     );
   }
 
-  Widget _buildContent(DoctorModel doctor, List<String> slots, bool isSlotsLoading) {
+  Widget _buildContent(
+    DoctorModel doctor,
+    List<String> slots,
+    bool isSlotsLoading,
+  ) {
     return Column(
       children: [
         const AppTopBar(showBackButton: true),
@@ -226,6 +227,8 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
   }
 
   Widget _buildHeroSection(DoctorModel doctor) {
+    final t = context;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -236,7 +239,10 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
               // Available badge
               if (doctor.isActive)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.tertiaryFixedDim.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
@@ -253,8 +259,8 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
-                        'AVAILABLE',
+                      Text(
+                        t.locText(en: 'AVAILABLE', ar: 'متاح'),
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -288,7 +294,10 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
               const SizedBox(height: 16),
               // Fee badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -311,7 +320,7 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
                       ),
                     ),
                     Text(
-                      ' / Visit',
+                      t.locText(en: ' / Visit', ar: ' / الزيارة'),
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary.withValues(alpha: 0.7),
@@ -337,7 +346,8 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
                   child: Image.network(
                     doctor.imageUrl!,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _buildDoctorInitials(doctor),
+                    errorBuilder: (context, error, stackTrace) =>
+                        _buildDoctorInitials(doctor),
                   ),
                 )
               : _buildDoctorInitials(doctor),
@@ -360,6 +370,8 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
   }
 
   Widget _buildAboutSection(DoctorModel doctor) {
+    final t = context;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -376,8 +388,8 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'About',
+          Text(
+            t.locText(en: 'About', ar: 'نبذة'),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -395,7 +407,7 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
               if (doctor.isActive)
                 _InfoChip(
                   icon: Icons.check_circle_outline,
-                  label: 'Active',
+                  label: t.locText(en: 'Active', ar: 'نشط'),
                   color: AppColors.tertiaryFixedDim,
                 ),
             ],
@@ -407,6 +419,7 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
 
   Widget _buildScheduleSection(DoctorModel doctor) {
     if (doctor.schedules.isEmpty) return const SizedBox.shrink();
+    final t = context;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -424,8 +437,8 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Weekly Schedule',
+          Text(
+            t.locText(en: 'Weekly Schedule', ar: 'الجدول الأسبوعي'),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -433,44 +446,56 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
             ),
           ),
           const SizedBox(height: 16),
-          ...doctor.schedules.map((schedule) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 80,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    schedule.dayOfWeek.substring(0, 3),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+          ...doctor.schedules.map(
+            (schedule) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 80,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      _localizedWeekdayShortLabel(schedule.dayOfWeek),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  '${schedule.startTime} - ${schedule.endTime}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                  const SizedBox(width: 12),
+                  Text(
+                    '${schedule.startTime} - ${schedule.endTime}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          )),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildBookingWidget(DoctorModel doctor, List<String> slots, bool isLoading) {
+  Widget _buildBookingWidget(
+    DoctorModel doctor,
+    List<String> slots,
+    bool isLoading,
+  ) {
+    final t = context;
+    final localeCode = context.localeCode;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -488,8 +513,8 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Book Appointment',
+          Text(
+            t.locText(en: 'Book Appointment', ar: 'احجز موعدًا'),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -498,8 +523,8 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
           ),
           const SizedBox(height: 20),
           // Date picker
-          const Text(
-            'SELECT DATE',
+          Text(
+            t.locText(en: 'SELECT DATE', ar: 'اختر التاريخ'),
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -513,7 +538,7 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: _availableDates.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              separatorBuilder: (context, index) => const SizedBox(width: 10),
               itemBuilder: (context, index) {
                 final date = _availableDates[index];
                 final isSelected = _isSameDay(date, _selectedDate);
@@ -530,14 +555,16 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
                           : AppColors.surfaceContainerLow,
                       borderRadius: BorderRadius.circular(14),
                       border: isToday && !isSelected
-                          ? Border.all(color: AppColors.primary.withValues(alpha: 0.3))
+                          ? Border.all(
+                              color: AppColors.primary.withValues(alpha: 0.3),
+                            )
                           : null,
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          DateFormat('EEE').format(date).toUpperCase(),
+                          _formatCalendarWeekday(date, localeCode),
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
@@ -559,7 +586,7 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
                         ),
                         if (isToday)
                           Text(
-                            'Today',
+                            t.locText(en: 'Today', ar: 'اليوم'),
                             style: TextStyle(
                               fontSize: 8,
                               fontWeight: FontWeight.w600,
@@ -580,8 +607,8 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'AVAILABLE TIMES',
+              Text(
+                t.locText(en: 'AVAILABLE TIMES', ar: 'الأوقات المتاحة'),
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
@@ -624,7 +651,10 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'No available slots for this date',
+                      t.locText(
+                        en: 'No available slots for this date',
+                        ar: 'لا توجد مواعيد متاحة لهذا التاريخ',
+                      ),
                       style: TextStyle(
                         fontSize: 13,
                         color: AppColors.textSecondary.withValues(alpha: 0.7),
@@ -684,7 +714,17 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(_selectedSlot != null ? 'Continue Booking' : 'Select a Time'),
+                  Text(
+                    _selectedSlot != null
+                        ? t.locText(
+                            en: 'Continue Booking',
+                            ar: 'متابعة الحجز',
+                          )
+                        : t.locText(
+                            en: 'Select a Time',
+                            ar: 'اختر الوقت',
+                          ),
+                  ),
                   const SizedBox(width: 8),
                   const Icon(Icons.arrow_forward, size: 18),
                 ],
@@ -707,7 +747,10 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
           doctorName: doctor.name,
           specialty: doctor.specialty,
           fee: doctor.formattedFee,
-          date: DateFormat('EEEE, MMMM d').format(_selectedDate),
+          date: DateFormat(
+            'EEEE, MMMM d',
+            context.localeCode,
+          ).format(_selectedDate),
           time: _formatTimeSlot(_selectedSlot!),
           bookingDate: _formatDateForApi(_selectedDate),
           bookingTime: _selectedSlot!,
@@ -721,28 +764,59 @@ class _DoctorProfileViewState extends State<_DoctorProfileView> {
   }
 
   String _formatTimeSlot(String slot) {
-    // Convert 24h format (09:00) to 12h format (9:00 AM)
+    final isArabic = context.l10n.isArabic;
+
     try {
       final parts = slot.split(':');
       final hour = int.parse(parts[0]);
       final minute = parts[1];
-      final period = hour >= 12 ? 'PM' : 'AM';
+      final period = hour >= 12
+          ? (isArabic ? 'م' : 'PM')
+          : (isArabic ? 'ص' : 'AM');
       final hour12 = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
       return '$hour12:$minute $period';
     } catch (e) {
       return slot;
     }
   }
+
+  String _formatCalendarWeekday(DateTime date, String localeCode) {
+    final label = DateFormat('EEE', localeCode).format(date);
+    return localeCode == 'ar' ? label : label.toUpperCase();
+  }
+
+  String _localizedWeekdayShortLabel(String day) {
+    final isArabic = context.l10n.isArabic;
+    final normalized = day.toLowerCase();
+    const english = {
+      'monday': 'Mon',
+      'tuesday': 'Tue',
+      'wednesday': 'Wed',
+      'thursday': 'Thu',
+      'friday': 'Fri',
+      'saturday': 'Sat',
+      'sunday': 'Sun',
+    };
+    const arabic = {
+      'monday': 'الاثنين',
+      'tuesday': 'الثلاثاء',
+      'wednesday': 'الأربعاء',
+      'thursday': 'الخميس',
+      'friday': 'الجمعة',
+      'saturday': 'السبت',
+      'sunday': 'الأحد',
+    };
+
+    return isArabic
+        ? (arabic[normalized] ?? day)
+        : (english[normalized] ?? day.substring(0, 3));
+  }
 }
 
 // ============ Helper Widgets ============
 
 class _InfoChip extends StatelessWidget {
-  const _InfoChip({
-    required this.icon,
-    required this.label,
-    this.color,
-  });
+  const _InfoChip({required this.icon, required this.label, this.color});
 
   final IconData icon;
   final String label;

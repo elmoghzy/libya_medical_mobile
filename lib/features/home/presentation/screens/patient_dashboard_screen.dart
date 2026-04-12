@@ -1,71 +1,215 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../doctors/presentation/screens/doctor_search_screen.dart';
 import '../../../facilities/presentation/screens/facility_listing_screen.dart';
+import '../../../queue/logic/clinic_queue_cubit.dart';
+import '../../../queue/presentation/screens/queue_tracker_screen.dart';
+import 'patient_bookings_screen.dart';
+import 'patient_profile_screen.dart';
 
 class PatientDashboardScreen extends StatefulWidget {
-  const PatientDashboardScreen({super.key});
+  const PatientDashboardScreen({super.key, this.initialTabIndex = 0});
+
+  final int initialTabIndex;
 
   @override
   State<PatientDashboardScreen> createState() => _PatientDashboardScreenState();
 }
 
 class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
-  int _currentNavIndex = 0;
+  late int _currentNavIndex;
+  int? _lastHandledAlertId;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentNavIndex = widget.initialTabIndex < 0
+        ? 0
+        : (widget.initialTabIndex > 3 ? 3 : widget.initialTabIndex);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: Column(
-        children: [
-          const AppTopBar(),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  // Hero section
-                  _buildHeroSection(),
-                  const SizedBox(height: 24),
-                  // CTA Grid
-                  _buildCTAGrid(),
-                  const SizedBox(height: 32),
-                  // Upcoming Appointments
-                  _buildUpcomingAppointments(),
-                  const SizedBox(height: 24),
-                  // Live status
-                  _buildLiveStatus(),
-                  const SizedBox(height: 100),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: _currentNavIndex,
-        onTap: (index) {
-          setState(() => _currentNavIndex = index);
-          if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute<void>(
-                builder: (_) => const DoctorSearchScreen(),
-              ),
-            );
-          }
-        },
+    return BlocListener<ClinicQueueCubit, ClinicQueueState>(
+      listenWhen: (previous, current) =>
+          previous.latestAlert?.id != current.latestAlert?.id,
+      listener: (context, state) {
+        final alert = state.latestAlert;
+        if (alert == null ||
+            alert.patientId != state.trackedPatientId ||
+            _lastHandledAlertId == alert.id) {
+          return;
+        }
+
+        _lastHandledAlertId = alert.id;
+        _showQueueAlertDialog(alert);
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.surface,
+        body: IndexedStack(
+          index: _currentNavIndex,
+          children: [
+            _buildHomeTab(),
+            const DoctorSearchScreen(embedded: true),
+            const PatientBookingsScreen(embedded: true),
+            const PatientProfileScreen(embedded: true),
+          ],
+        ),
+        bottomNavigationBar: AppBottomNavBar(
+          currentIndex: _currentNavIndex,
+          onTap: (index) => setState(() => _currentNavIndex = index),
+        ),
       ),
     );
   }
 
+  Widget _buildHomeTab() {
+    return Column(
+      children: [
+        AppTopBar(onNotificationTap: _openQueueTracker),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                _buildHeroSection(),
+                const SizedBox(height: 16),
+                _buildLiveQueueCard(),
+                const SizedBox(height: 24),
+                _buildCTAGrid(),
+                const SizedBox(height: 32),
+                _buildUpcomingAppointments(),
+                const SizedBox(height: 24),
+                _buildLiveStatus(),
+                const SizedBox(height: 100),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _openQueueTracker() {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(builder: (_) => const QueueTrackerScreen()),
+    );
+  }
+
+  Future<void> _showQueueAlertDialog(QueueAlertEvent alert) async {
+    if (!mounted) {
+      return;
+    }
+
+    final isArabic = context.l10n.isArabic;
+    final title = isArabic ? alert.titleAr : alert.titleEn;
+    final message = isArabic ? alert.messageAr : alert.messageEn;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.18),
+                  blurRadius: 32,
+                  offset: const Offset(0, 18),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 76,
+                  height: 76,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: alert.type == QueueAlertType.call
+                        ? AppColors.error.withValues(alpha: 0.12)
+                        : AppColors.warning.withValues(alpha: 0.12),
+                  ),
+                  child: Icon(
+                    alert.type == QueueAlertType.call
+                        ? Icons.notifications_active_rounded
+                        : Icons.schedule_send_rounded,
+                    size: 38,
+                    color: alert.type == QueueAlertType.call
+                        ? AppColors.error
+                        : AppColors.warning,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: AppColors.textSecondary.withValues(alpha: 0.85),
+                  ),
+                ),
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(dialogContext);
+                      _openQueueTracker();
+                    },
+                    icon: const Icon(Icons.open_in_new, color: Colors.white),
+                    label: Text(
+                      context.locText(
+                        en: 'Open Live Queue',
+                        ar: 'افتح التتبع المباشر',
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(context.locText(en: 'Dismiss', ar: 'إغلاق')),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildHeroSection() {
+    final helloText = context.locText(
+      en: 'Hello, Ahmed Al-Farsi',
+      ar: 'مرحبًا، أحمد الفارسي',
+    );
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -101,7 +245,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'WELCOME BACK',
+                context.locText(en: 'WELCOME BACK', ar: 'مرحبًا بعودتك'),
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -110,8 +254,8 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Hello, Ahmed Al-Farsi',
+              Text(
+                helloText,
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
@@ -121,7 +265,10 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Your health journey is our priority. Explore our specialized services and world-class facilities today.',
+                context.locText(
+                  en: 'Your health journey is our priority. Explore our specialized services and world-class facilities today.',
+                  ar: 'رحلتك الصحية هي أولويتنا. استكشف خدماتنا الطبية المتخصصة والمرافق المتاحة بسهولة.',
+                ),
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.white.withValues(alpha: 0.7),
@@ -141,17 +288,18 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
         Expanded(
           child: _CTACard(
             icon: Icons.medical_information,
-            title: 'Book Doctor',
-            subtitle: 'Access top-rated specialists in medicine.',
-            buttonText: 'Schedule Visit',
+            title: context.locText(en: 'Book Doctor', ar: 'احجز طبيب'),
+            subtitle: context.locText(
+              en: 'Access top-rated specialists in medicine.',
+              ar: 'اطلع على أفضل الأطباء المتخصصين واحجز بسرعة.',
+            ),
+            buttonText: context.locText(
+              en: 'Schedule Visit',
+              ar: 'احجز موعدًا',
+            ),
             isPrimary: true,
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (_) => const DoctorSearchScreen(),
-                ),
-              );
+              setState(() => _currentNavIndex = 1);
             },
           ),
         ),
@@ -159,9 +307,15 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
         Expanded(
           child: _CTACard(
             icon: Icons.bed_outlined,
-            title: 'Book Room',
-            subtitle: 'Reserve premium medical recovery suites.',
-            buttonText: 'Check Availability',
+            title: context.locText(en: 'Book Room', ar: 'احجز غرفة'),
+            subtitle: context.locText(
+              en: 'Reserve premium medical recovery suites.',
+              ar: 'احجز غرف الرعاية والتعافي المتاحة داخل المستشفى.',
+            ),
+            buttonText: context.locText(
+              en: 'Check Availability',
+              ar: 'تحقق من التوفر',
+            ),
             isPrimary: false,
             onTap: () {
               Navigator.push(
@@ -177,7 +331,133 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
     );
   }
 
+  Widget _buildLiveQueueCard() {
+    return BlocBuilder<ClinicQueueCubit, ClinicQueueState>(
+      builder: (context, queueState) {
+        final queueCubit = context.read<ClinicQueueCubit>();
+        final patient = queueState.trackedPatient;
+
+        if (patient == null ||
+            patient.status == ClinicQueuePatientStatus.completed) {
+          return const SizedBox.shrink();
+        }
+
+        final estimatedStart = queueCubit.estimatedStartMinutesFor(patient.id);
+        final delayMinutes = queueCubit.delayMinutesFor(patient.id);
+        final waitMinutes = queueCubit.waitMinutesFor(patient.id);
+        final statusText = patient.status == ClinicQueuePatientStatus.inProgress
+            ? context.locText(
+                en: 'The doctor is ready for you now',
+                ar: 'الطبيب جاهز لك الآن',
+              )
+            : delayMinutes > 0
+            ? context.locText(
+                en: 'Your appointment moved by $delayMinutes minutes',
+                ar: 'تم تحريك موعدك بمقدار $delayMinutes دقيقة',
+              )
+            : context.locText(
+                en: 'Your turn is approaching',
+                ar: 'دورك يقترب الآن',
+              );
+
+        return GestureDetector(
+          onTap: _openQueueTracker,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.error.withValues(alpha: 0.08),
+                  AppColors.warning.withValues(alpha: 0.1),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: AppColors.warning.withValues(alpha: 0.25),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    patient.status == ClinicQueuePatientStatus.inProgress
+                        ? Icons.notifications_active_rounded
+                        : Icons.access_time_filled_rounded,
+                    color: AppColors.warning,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        context.locText(
+                          en: 'Live Queue Update',
+                          ar: 'تحديث مباشر للطابور',
+                        ),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        statusText,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary.withValues(
+                            alpha: 0.82,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _QueueBadge(
+                            text: context.locText(
+                              en: 'Expected ${queueCubit.formatClock(estimatedStart)}',
+                              ar: 'المتوقع ${queueCubit.formatClock(estimatedStart, useArabicPeriod: true)}',
+                            ),
+                          ),
+                          _QueueBadge(
+                            text: context.locText(
+                              en: 'Wait ~$waitMinutes min',
+                              ar: 'الانتظار ~$waitMinutes دقيقة',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildUpcomingAppointments() {
+    final noMoreAppointments = context.locText(
+      en: 'No other appointments\nscheduled this week',
+      ar: 'لا توجد مواعيد أخرى\nمجدولة هذا الأسبوع',
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -187,8 +467,11 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Upcoming Appointments',
+                Text(
+                  context.locText(
+                    en: 'Upcoming Appointments',
+                    ar: 'المواعيد القادمة',
+                  ),
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -197,7 +480,10 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  "Don't miss your next medical checkup",
+                  context.locText(
+                    en: "Don't miss your next medical checkup",
+                    ar: 'لا تفوّت موعدك الطبي القادم',
+                  ),
                   style: TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary.withValues(alpha: 0.7),
@@ -207,8 +493,8 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
             ),
             TextButton(
               onPressed: () {},
-              child: const Text(
-                'View All',
+              child: Text(
+                context.locText(en: 'View All', ar: 'عرض الكل'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -225,10 +511,22 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
           children: [
             Expanded(
               child: _AppointmentCard(
-                doctorName: 'Dr. Selim Khoury',
-                specialty: 'Senior Cardiologist',
-                date: 'Tomorrow, Oct 24, 2023',
-                time: '10:30 AM - 11:15 AM',
+                doctorName: context.locText(
+                  en: 'Dr. Selim Khoury',
+                  ar: 'د. سليم خوري',
+                ),
+                specialty: context.locText(
+                  en: 'Senior Cardiologist',
+                  ar: 'استشاري أمراض القلب',
+                ),
+                date: context.locText(
+                  en: 'Tomorrow, Oct 24, 2023',
+                  ar: 'غدًا، 24 أكتوبر 2023',
+                ),
+                time: context.locText(
+                  en: '10:30 AM - 11:15 AM',
+                  ar: '10:30 ص - 11:15 ص',
+                ),
                 isConfirmed: true,
               ),
             ),
@@ -263,7 +561,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'No other appointments\nscheduled this week',
+                      noMoreAppointments,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,
@@ -310,8 +608,11 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              const Text(
-                'FACILITY LIVE STATUS',
+              Text(
+                context.locText(
+                  en: 'FACILITY LIVE STATUS',
+                  ar: 'حالة المرافق المباشرة',
+                ),
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
@@ -326,14 +627,14 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
           Row(
             children: [
               _StatusItem(
-                label: 'Radiology Lab',
-                value: 'Normal Wait',
+                label: context.locText(en: 'Radiology Lab', ar: 'مختبر الأشعة'),
+                value: context.locText(en: 'Normal Wait', ar: 'انتظار طبيعي'),
                 isAlert: false,
               ),
               const SizedBox(width: 24),
               _StatusItem(
-                label: 'Emergency Care',
-                value: 'High Activity',
+                label: context.locText(en: 'Emergency Care', ar: 'قسم الطوارئ'),
+                value: context.locText(en: 'High Activity', ar: 'ازدحام مرتفع'),
                 isAlert: true,
               ),
             ],
@@ -500,8 +801,8 @@ class _AppointmentCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    const Text(
-                      'CONFIRMED',
+                    Text(
+                      context.locText(en: 'CONFIRMED', ar: 'مؤكد'),
                       style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.w700,
@@ -608,8 +909,8 @@ class _AppointmentCard extends StatelessWidget {
                     side: BorderSide(color: AppColors.surfaceContainerHigh),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  child: const Text(
-                    'Reschedule',
+                  child: Text(
+                    context.locText(en: 'Reschedule', ar: 'إعادة جدولة'),
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -622,8 +923,8 @@ class _AppointmentCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     minimumSize: Size.zero,
                   ),
-                  child: const Text(
-                    'Pre-Check',
+                  child: Text(
+                    context.locText(en: 'Pre-Check', ar: 'تسجيل مسبق'),
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -671,6 +972,31 @@ class _StatusItem extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _QueueBadge extends StatelessWidget {
+  const _QueueBadge({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary,
+        ),
+      ),
     );
   }
 }

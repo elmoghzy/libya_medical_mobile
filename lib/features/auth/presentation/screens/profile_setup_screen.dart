@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../home/presentation/screens/patient_dashboard_screen.dart';
 
@@ -79,8 +80,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Libya Medical',
+                      Text(
+                        context.locText(en: 'Libya Medical', ar: 'ليبيا الطبية'),
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
@@ -96,8 +97,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                           color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Text(
-                          'Step 2 of 2',
+                        child: Text(
+                          context.locText(
+                            en: 'Step 2 of 2',
+                            ar: 'الخطوة 2 من 2',
+                          ),
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -110,7 +114,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   const SizedBox(height: 40),
                   // Title
                   RichText(
-                    text: const TextSpan(
+                    text: TextSpan(
                       style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.w800,
@@ -118,9 +122,17 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         height: 1.2,
                       ),
                       children: [
-                        TextSpan(text: 'Complete your\n'),
                         TextSpan(
-                          text: 'professional profile',
+                          text: context.locText(
+                            en: 'Complete your\n',
+                            ar: 'أكمل\n',
+                          ),
+                        ),
+                        TextSpan(
+                          text: context.locText(
+                            en: 'professional profile',
+                            ar: 'ملفك الشخصي',
+                          ),
                           style: TextStyle(color: AppColors.primary),
                         ),
                       ],
@@ -128,7 +140,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Help us personalize your medical journey with accurate details.',
+                    context.locText(
+                      en:
+                          'Help us personalize your medical journey with accurate details.',
+                      ar: 'ساعدنا في تخصيص تجربتك الصحية بإدخال بيانات دقيقة.',
+                    ),
                     style: TextStyle(
                       fontSize: 15,
                       color: AppColors.textSecondary.withValues(alpha: 0.8),
@@ -208,8 +224,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    'Profile Picture',
+                                  Text(
+                                    context.locText(
+                                      en: 'Profile Picture',
+                                      ar: 'الصورة الشخصية',
+                                    ),
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w700,
@@ -218,7 +237,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Clear facial photos help build trust with colleagues and patients.',
+                                    context.locText(
+                                      en:
+                                          'Clear facial photos help build trust with colleagues and patients.',
+                                      ar:
+                                          'الصورة الواضحة تساعد على بناء الثقة مع الزملاء والمرضى.',
+                                    ),
                                     style: TextStyle(
                                       fontSize: 13,
                                       color: AppColors.textSecondary.withValues(
@@ -234,8 +258,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         ),
                         const SizedBox(height: 32),
                         // Full name
-                        const Text(
-                          'Full Name',
+                        Text(
+                          context.locText(
+                            en: 'Full Name',
+                            ar: 'الاسم الكامل',
+                          ),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -246,14 +273,17 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         TextFormField(
                           controller: _nameController,
                           textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            hintText: 'Dr. Ahmed Mansour',
+                          decoration: InputDecoration(
+                            hintText: context.locText(
+                              en: 'Dr. Ahmed Mansour',
+                              ar: 'د. أحمد منصور',
+                            ),
                           ),
                         ),
                         const SizedBox(height: 24),
                         // Role selection
-                        const Text(
-                          'I am a...',
+                        Text(
+                          context.locText(en: 'I am a...', ar: 'أنا...'),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -266,8 +296,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                             Expanded(
                               child: _RoleCard(
                                 icon: Icons.person_outline,
-                                title: 'Patient',
-                                subtitle: 'Looking for care',
+                                title: context.locText(
+                                  en: 'Patient',
+                                  ar: 'مريض',
+                                ),
+                                subtitle: context.locText(
+                                  en: 'Looking for care',
+                                  ar: 'أبحث عن رعاية',
+                                ),
                                 isSelected: _selectedRole == 'patient',
                                 onTap: () =>
                                     setState(() => _selectedRole = 'patient'),
@@ -277,8 +313,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                             Expanded(
                               child: _RoleCard(
                                 icon: Icons.medical_services_outlined,
-                                title: 'Healthcare Provider',
-                                subtitle: 'Managing patients',
+                                title: context.locText(
+                                  en: 'Healthcare Provider',
+                                  ar: 'مقدم رعاية',
+                                ),
+                                subtitle: context.locText(
+                                  en: 'Managing patients',
+                                  ar: 'أدير المرضى',
+                                ),
                                 isSelected: _selectedRole == 'doctor',
                                 onTap: () =>
                                     setState(() => _selectedRole = 'doctor'),
@@ -288,8 +330,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         ),
                         if (_selectedRole == 'doctor') ...[
                           const SizedBox(height: 24),
-                          const Text(
-                            'Medical Specialty',
+                          Text(
+                            context.locText(
+                              en: 'Medical Specialty',
+                              ar: 'التخصص الطبي',
+                            ),
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -299,12 +344,19 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                           const SizedBox(height: 8),
                           DropdownButtonFormField<String>(
                             value: _selectedSpecialty,
-                            hint: const Text('Select your field'),
+                            hint: Text(
+                              context.locText(
+                                en: 'Select your field',
+                                ar: 'اختر تخصصك',
+                              ),
+                            ),
                             decoration: const InputDecoration(),
                             items: _specialties.map((specialty) {
                               return DropdownMenuItem(
                                 value: specialty,
-                                child: Text(specialty),
+                                child: Text(
+                                  _localizedSpecialty(context, specialty),
+                                ),
                               );
                             }).toList(),
                             onChanged: (value) =>
@@ -317,7 +369,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                           children: [
                             Expanded(
                               child: Text(
-                                'You can update these details later in Settings.',
+                                context.locText(
+                                  en:
+                                      'You can update these details later in Settings.',
+                                  ar:
+                                      'يمكنك تعديل هذه البيانات لاحقًا من الإعدادات.',
+                                ),
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: AppColors.textSecondary.withValues(
@@ -331,8 +388,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                               onPressed: _completeProfile,
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
-                                children: const [
-                                  Text('Complete Profile'),
+                                children: [
+                                  Text(
+                                    context.locText(
+                                      en: 'Complete Profile',
+                                      ar: 'إكمال الملف',
+                                    ),
+                                  ),
                                   SizedBox(width: 8),
                                   Icon(Icons.arrow_forward, size: 16),
                                 ],
@@ -377,8 +439,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
-                                      'Verified Network',
+                                    Text(
+                                      context.locText(
+                                        en: 'Verified Network',
+                                        ar: 'شبكة موثقة',
+                                      ),
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700,
@@ -387,7 +452,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      'Join 500+ licensed Libyan medical professionals.',
+                                      context.locText(
+                                        en:
+                                            'Join 500+ licensed Libyan medical professionals.',
+                                        ar:
+                                            'انضم إلى أكثر من 500 مختص طبي ليبي مرخّص.',
+                                      ),
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: AppColors.textSecondary
@@ -412,15 +482,18 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Icon(
+                            children: [
+                              const Icon(
                                 Icons.verified_user,
                                 color: Colors.white,
                                 size: 24,
                               ),
-                              SizedBox(height: 12),
+                              const SizedBox(height: 12),
                               Text(
-                                'Clinical Data Privacy Guaranteed',
+                                context.locText(
+                                  en: 'Clinical Data Privacy Guaranteed',
+                                  ar: 'خصوصية البيانات الطبية مضمونة',
+                                ),
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -511,5 +584,24 @@ class _RoleCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+String _localizedSpecialty(BuildContext context, String specialty) {
+  if (!context.l10n.isArabic) return specialty;
+
+  switch (specialty) {
+    case 'Cardiology':
+      return 'طب القلب';
+    case 'Pediatrics':
+      return 'طب الأطفال';
+    case 'Neurology':
+      return 'طب الأعصاب';
+    case 'Dermatology':
+      return 'الأمراض الجلدية';
+    case 'General Practice':
+      return 'طب عام';
+    default:
+      return specialty;
   }
 }

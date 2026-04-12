@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../home/presentation/screens/patient_tab_navigation.dart';
 
 class FacilityListingScreen extends StatefulWidget {
   const FacilityListingScreen({super.key});
@@ -68,6 +70,11 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final facilitiesFound = context.locText(
+      en: '${_facilities.length} Facilities Found',
+      ar: '${_facilities.length} مرفقًا متاحًا',
+    );
+
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: Column(
@@ -98,7 +105,7 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${_facilities.length} Facilities Found',
+                          facilitiesFound,
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -108,7 +115,9 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
                         TextButton.icon(
                           onPressed: () {},
                           icon: const Icon(Icons.tune, size: 16),
-                          label: const Text('Sort'),
+                          label: Text(
+                            context.locText(en: 'Sort', ar: 'ترتيب'),
+                          ),
                         ),
                       ],
                     ),
@@ -129,15 +138,18 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
         ],
       ),
       bottomNavigationBar: AppBottomNavBar(
-        currentIndex: 3,
+        currentIndex: 1,
         onTap: (index) {
-          if (index != 3) Navigator.pop(context);
+          if (index == 1) return;
+          navigateToPatientRootTab(context, index);
         },
       ),
     );
   }
 
   Widget _buildHeroSection() {
+    final t = context;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -175,8 +187,11 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Text(
-                        'REAL-TIME AVAILABILITY',
+                      Text(
+                        t.locText(
+                          en: 'REAL-TIME AVAILABILITY',
+                          ar: 'التوفر المباشر',
+                        ),
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -188,8 +203,11 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Hospital Rooms\n& Facilities',
+                Text(
+                  t.locText(
+                    en: 'Hospital Rooms\n& Facilities',
+                    ar: 'غرف المستشفى\nوالمرافق',
+                  ),
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
@@ -199,7 +217,12 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Find and book available hospital beds, ICU rooms, and specialized care facilities.',
+                  t.locText(
+                    en:
+                        'Find and book available hospital beds, ICU rooms, and specialized care facilities.',
+                    ar:
+                        'ابحث عن أسرّة المستشفيات وغرف العناية والمرافق الطبية المتاحة واحجزها.',
+                  ),
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.white.withValues(alpha: 0.8),
@@ -243,7 +266,10 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
       ),
       child: TextField(
         decoration: InputDecoration(
-          hintText: 'Search hospitals, clinics...',
+          hintText: context.locText(
+            en: 'Search hospitals, clinics...',
+            ar: 'ابحث عن مستشفيات أو عيادات...',
+          ),
           prefixIcon: const Icon(Icons.search, color: AppColors.outlineVariant),
           suffixIcon: Container(
             margin: const EdgeInsets.all(8),
@@ -264,6 +290,14 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
   }
 
   Widget _buildFilterChips() {
+    final labels = {
+      'All': context.locText(en: 'All', ar: 'الكل'),
+      'ICU': context.locText(en: 'ICU', ar: 'عناية'),
+      'Private': context.locText(en: 'Private', ar: 'خاص'),
+      'Ward': context.locText(en: 'Ward', ar: 'عنابر'),
+      'Emergency': context.locText(en: 'Emergency', ar: 'طوارئ'),
+    };
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -289,7 +323,7 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
                   ),
                 ),
                 child: Text(
-                  filter,
+                  labels[filter] ?? filter,
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -311,7 +345,7 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
           child: _buildStatCard(
             Icons.bed,
             '287',
-            'Available Beds',
+            context.locText(en: 'Available Beds', ar: 'الأسرّة المتاحة'),
             AppColors.tertiary,
           ),
         ),
@@ -320,7 +354,7 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
           child: _buildStatCard(
             Icons.medical_services,
             '23',
-            'ICU Units',
+            context.locText(en: 'ICU Units', ar: 'وحدات العناية'),
             AppColors.warning,
           ),
         ),
@@ -329,7 +363,7 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
           child: _buildStatCard(
             Icons.local_hospital,
             '12',
-            'Hospitals',
+            context.locText(en: 'Hospitals', ar: 'مستشفيات'),
             AppColors.primary,
           ),
         ),
@@ -430,7 +464,7 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
                         children: [
                           Expanded(
                             child: Text(
-                              facility['name'] as String,
+                              _localizedFacilityName(facility['name'] as String),
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
@@ -465,8 +499,14 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
                                 const SizedBox(width: 6),
                                 Text(
                                   (facility['isOpen'] as bool)
-                                      ? 'OPEN'
-                                      : 'CLOSED',
+                                      ? context.locText(
+                                          en: 'OPEN',
+                                          ar: 'مفتوح',
+                                        )
+                                      : context.locText(
+                                          en: 'CLOSED',
+                                          ar: 'مغلق',
+                                        ),
                                   style: TextStyle(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w700,
@@ -482,7 +522,7 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        facility['type'] as String,
+                        _localizedFacilityType(facility['type'] as String),
                         style: TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary.withValues(alpha: 0.7),
@@ -494,7 +534,12 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
                           const Icon(Icons.star, size: 14, color: Colors.amber),
                           const SizedBox(width: 4),
                           Text(
-                            '${facility['rating']} (${facility['reviews']} reviews)',
+                            context.locText(
+                              en:
+                                  '${facility['rating']} (${facility['reviews']} reviews)',
+                              ar:
+                                  '${facility['rating']} (${facility['reviews']} تقييم)',
+                            ),
                             style: TextStyle(
                               fontSize: 12,
                               color: AppColors.textSecondary.withValues(
@@ -510,7 +555,7 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            facility['distance'] as String,
+                            _localizedDistance(facility['distance'] as String),
                             style: TextStyle(
                               fontSize: 12,
                               color: AppColors.textSecondary.withValues(
@@ -535,7 +580,7 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
                   children: [
                     Expanded(
                       child: _buildBedInfo(
-                        'ICU Beds',
+                        context.locText(en: 'ICU Beds', ar: 'أسرة العناية'),
                         facility['icuBeds'] as int,
                         AppColors.error,
                       ),
@@ -543,7 +588,7 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildBedInfo(
-                        'Private',
+                        context.locText(en: 'Private', ar: 'خاص'),
                         facility['privateBeds'] as int,
                         AppColors.primary,
                       ),
@@ -551,7 +596,7 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildBedInfo(
-                        'Ward',
+                        context.locText(en: 'Ward', ar: 'عنابر'),
                         facility['wardBeds'] as int,
                         AppColors.tertiary,
                       ),
@@ -580,7 +625,11 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Wait: ${facility['waitTime']}',
+                              context.locText(
+                                en: 'Wait: ${facility['waitTime']}',
+                                ar:
+                                    'الانتظار: ${_localizedWaitTime(facility['waitTime'] as String)}',
+                              ),
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -600,7 +649,9 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        child: const Text('Book Room'),
+                        child: Text(
+                          context.locText(en: 'Book Room', ar: 'احجز غرفة'),
+                        ),
                       ),
                     ),
                   ],
@@ -642,5 +693,59 @@ class _FacilityListingScreenState extends State<FacilityListingScreen> {
         ],
       ),
     );
+  }
+
+  String _localizedFacilityType(String type) {
+    if (!context.l10n.isArabic) return type;
+
+    switch (type) {
+      case 'Government Hospital':
+        return 'مستشفى حكومي';
+      case 'Specialized Hospital':
+        return 'مستشفى تخصصي';
+      case 'Private Clinic':
+        return 'عيادة خاصة';
+      default:
+        return type;
+    }
+  }
+
+  String _localizedFacilityName(String name) {
+    if (!context.l10n.isArabic) return name;
+
+    switch (name) {
+      case 'Tripoli Medical Center':
+        return 'مركز طرابلس الطبي';
+      case 'Al-Jala Hospital':
+        return 'مستشفى الجلاء';
+      case 'Benghazi Medical Center':
+        return 'مركز بنغازي الطبي';
+      case 'Libya Heart Center':
+        return 'مركز ليبيا للقلب';
+      default:
+        return name;
+    }
+  }
+
+  String _localizedDistance(String distance) {
+    if (!context.l10n.isArabic) return distance;
+    return distance.replaceAll(' km', ' كم');
+  }
+
+  String _localizedWaitTime(String waitTime) {
+    if (!context.l10n.isArabic) return waitTime;
+
+    switch (waitTime) {
+      case '~15 min':
+        return '~15 دقيقة';
+      case '~25 min':
+        return '~25 دقيقة';
+      case '~10 min':
+        return '~10 دقائق';
+      case 'Closed':
+        return 'مغلق';
+      default:
+        return waitTime;
+    }
   }
 }

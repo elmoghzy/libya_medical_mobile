@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -29,9 +30,9 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
           // Home Tab
           _buildHomeTab(context),
           // Queue Tab
-          const ClinicQueueManagerScreen(),
+          const ClinicQueueManagerScreen(embedded: true),
           // Schedule Tab
-          const ScheduleManagerScreen(),
+          const ScheduleManagerScreen(embedded: true),
           // Profile Tab
           _buildProfileTab(context),
         ],
@@ -51,7 +52,9 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
   Widget _buildHomeTab(BuildContext context) {
     return Column(
       children: [
-        const AppTopBar(title: 'Dashboard'),
+        AppTopBar(
+          title: context.locText(en: 'Dashboard', ar: 'لوحة التحكم'),
+        ),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -85,7 +88,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
   Widget _buildProfileTab(BuildContext context) {
     return Column(
       children: [
-        const AppTopBar(title: 'الملف الشخصي'),
+        AppTopBar(title: context.l10n.tr('profile')),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -119,22 +122,28 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                 // Profile Options
                 _buildProfileOption(
                   icon: Icons.edit,
-                  title: 'تعديل الملف الشخصي',
+                  title: context.locText(
+                    en: 'Edit Profile',
+                    ar: 'تعديل الملف الشخصي',
+                  ),
                   onTap: () {},
                 ),
                 _buildProfileOption(
                   icon: Icons.settings,
-                  title: 'الإعدادات',
+                  title: context.locText(en: 'Settings', ar: 'الإعدادات'),
                   onTap: () {},
                 ),
                 _buildProfileOption(
                   icon: Icons.help_outline,
-                  title: 'المساعدة والدعم',
+                  title: context.locText(
+                    en: 'Help & Support',
+                    ar: 'المساعدة والدعم',
+                  ),
                   onTap: () {},
                 ),
                 _buildProfileOption(
                   icon: Icons.logout,
-                  title: 'تسجيل الخروج',
+                  title: context.locText(en: 'Sign Out', ar: 'تسجيل الخروج'),
                   onTap: () => _showLogoutDialog(context),
                   isDestructive: true,
                 ),
@@ -178,12 +187,17 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('تسجيل الخروج'),
-        content: const Text('هل أنت متأكد من تسجيل الخروج؟'),
+        title: Text(context.locText(en: 'Sign Out', ar: 'تسجيل الخروج')),
+        content: Text(
+          context.locText(
+            en: 'Are you sure you want to sign out?',
+            ar: 'هل أنت متأكد من تسجيل الخروج؟',
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
+            child: Text(context.l10n.tr('cancel')),
           ),
           TextButton(
             onPressed: () async {
@@ -200,7 +214,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
               }
             },
             child: Text(
-              'تسجيل الخروج',
+              context.locText(en: 'Sign Out', ar: 'تسجيل الخروج'),
               style: TextStyle(color: AppColors.error),
             ),
           ),
@@ -254,8 +268,8 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Text(
-                        'ON DUTY',
+                      Text(
+                        context.locText(en: 'ON DUTY', ar: 'على رأس العمل'),
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -267,8 +281,11 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Good Morning,\nDr. Hassan!',
+                Text(
+                  context.locText(
+                    en: 'Good Morning,\nDr. Hassan!',
+                    ar: 'صباح الخير،\nد. حسن!',
+                  ),
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
@@ -278,7 +295,10 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'You have 8 appointments today.\nYour clinic queue is active.',
+                  context.locText(
+                    en: 'You have 8 appointments today.\nYour clinic queue is active.',
+                    ar: 'لديك 8 مواعيد اليوم.\nطابور العيادة لديك نشط الآن.',
+                  ),
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.white.withValues(alpha: 0.8),
@@ -311,31 +331,31 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
       children: [
         Expanded(
           child: _buildStatCard(
-            'Today\'s Patients',
+            context.locText(en: 'Today\'s Patients', ar: 'مرضى اليوم'),
             '8',
             Icons.people_outline,
             AppColors.primary,
-            '3 completed',
+            context.locText(en: '3 completed', ar: 'اكتمل 3'),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _buildStatCard(
-            'In Queue',
+            context.locText(en: 'In Queue', ar: 'في الطابور'),
             '5',
             Icons.queue,
             AppColors.warning,
-            '~2hr wait',
+            context.locText(en: '~2hr wait', ar: '~ساعتان انتظار'),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _buildStatCard(
-            'Rating',
+            context.locText(en: 'Rating', ar: 'التقييم'),
             '4.9',
             Icons.star_outline,
             AppColors.tertiary,
-            '120 reviews',
+            context.locText(en: '120 reviews', ar: '120 تقييم'),
           ),
         ),
       ],
@@ -409,8 +429,8 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Quick Actions',
+        Text(
+          context.locText(en: 'Quick Actions', ar: 'إجراءات سريعة'),
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -422,8 +442,11 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
           children: [
             Expanded(
               child: _buildActionCard(
-                'Manage Queue',
-                'View & manage patients',
+                context.locText(en: 'Manage Queue', ar: 'إدارة الطابور'),
+                context.locText(
+                  en: 'View & manage patients',
+                  ar: 'عرض وإدارة المرضى',
+                ),
                 Icons.queue,
                 AppColors.primary,
                 () {
@@ -439,8 +462,8 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: _buildActionCard(
-                'Schedule',
-                'Set availability',
+                context.locText(en: 'Schedule', ar: 'الجدول'),
+                context.locText(en: 'Set availability', ar: 'تحديد التوفر'),
                 Icons.calendar_month,
                 AppColors.tertiary,
                 () {
@@ -460,8 +483,11 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
           children: [
             Expanded(
               child: _buildActionCard(
-                'Start Consultation',
-                'Begin with next patient',
+                context.locText(en: 'Start Consultation', ar: 'بدء الاستشارة'),
+                context.locText(
+                  en: 'Begin with next patient',
+                  ar: 'ابدأ مع المريض التالي',
+                ),
                 Icons.video_call,
                 AppColors.success,
                 () {
@@ -477,8 +503,11 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: _buildActionCard(
-                'Medical Records',
-                'View patient history',
+                context.locText(en: 'Medical Records', ar: 'السجل الطبي'),
+                context.locText(
+                  en: 'View patient history',
+                  ar: 'عرض تاريخ المريض',
+                ),
                 Icons.folder_open,
                 AppColors.warning,
                 () {},
@@ -572,8 +601,8 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Next Patient',
+              Text(
+                context.locText(en: 'Next Patient', ar: 'المريض التالي'),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -590,7 +619,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  'WAITING',
+                  context.locText(en: 'WAITING', ar: 'بانتظارك'),
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
@@ -632,7 +661,10 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Female, 34 years • Queue #4',
+                      context.locText(
+                        en: 'Female, 34 years • Queue #4',
+                        ar: 'أنثى، 34 سنة • رقم الدور 4',
+                      ),
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary.withValues(alpha: 0.7),
@@ -641,9 +673,18 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        _buildTag('Heart Checkup', AppColors.primary),
+                        _buildTag(
+                          context.locText(en: 'Heart Checkup', ar: 'فحص القلب'),
+                          AppColors.primary,
+                        ),
                         const SizedBox(width: 8),
-                        _buildTag('First Visit', AppColors.tertiary),
+                        _buildTag(
+                          context.locText(
+                            en: 'First Visit',
+                            ar: 'الزيارة الأولى',
+                          ),
+                          AppColors.tertiary,
+                        ),
                       ],
                     ),
                   ],
@@ -663,7 +704,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'REASON FOR VISIT',
+                  context.locText(en: 'REASON FOR VISIT', ar: 'سبب الزيارة'),
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
@@ -673,7 +714,10 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Experiencing chest pain and shortness of breath during physical activities...',
+                  context.locText(
+                    en: 'Experiencing chest pain and shortness of breath during physical activities...',
+                    ar: 'يعاني من ألم في الصدر وضيق في التنفس أثناء الأنشطة البدنية...',
+                  ),
                   style: TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary.withValues(alpha: 0.9),
@@ -689,7 +733,9 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {},
-                  child: const Text('View Records'),
+                  child: Text(
+                    context.locText(en: 'View Records', ar: 'عرض السجل'),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -703,7 +749,9 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                       ),
                     );
                   },
-                  child: const Text('Start Consult'),
+                  child: Text(
+                    context.locText(en: 'Start Consult', ar: 'بدء الاستشارة'),
+                  ),
                 ),
               ),
             ],
@@ -738,30 +786,58 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Today\'s Schedule',
+            Text(
+              context.locText(en: 'Today\'s Schedule', ar: 'جدول اليوم'),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
             ),
-            TextButton(onPressed: () {}, child: const Text('View All')),
+            TextButton(
+              onPressed: () {},
+              child: Text(context.locText(en: 'View All', ar: 'عرض الكل')),
+            ),
           ],
         ),
         const SizedBox(height: 12),
-        _buildScheduleItem('09:00', 'Mohammed Ali', 'Follow-up', true),
-        _buildScheduleItem('09:30', 'Sara Ahmed', 'Consultation', true),
-        _buildScheduleItem('10:00', 'Khalid Omar', 'ECG Test', true),
+        _buildScheduleItem(
+          '09:00',
+          'Mohammed Ali',
+          context.locText(en: 'Follow-up', ar: 'متابعة'),
+          true,
+        ),
+        _buildScheduleItem(
+          '09:30',
+          'Sara Ahmed',
+          context.locText(en: 'Consultation', ar: 'استشارة'),
+          true,
+        ),
+        _buildScheduleItem(
+          '10:00',
+          'Khalid Omar',
+          context.locText(en: 'ECG Test', ar: 'تخطيط قلب'),
+          true,
+        ),
         _buildScheduleItem(
           '10:30',
           'Fatima Al-Farsi',
-          'Heart Checkup',
+          context.locText(en: 'Heart Checkup', ar: 'فحص القلب'),
           false,
           isCurrent: true,
         ),
-        _buildScheduleItem('11:00', 'Ali Hassan', 'Consultation', false),
-        _buildScheduleItem('11:30', 'Maryam Salem', 'Follow-up', false),
+        _buildScheduleItem(
+          '11:00',
+          'Ali Hassan',
+          context.locText(en: 'Consultation', ar: 'استشارة'),
+          false,
+        ),
+        _buildScheduleItem(
+          '11:30',
+          'Maryam Salem',
+          context.locText(en: 'Follow-up', ar: 'متابعة'),
+          false,
+        ),
       ],
     );
   }
@@ -851,7 +927,11 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
           ),
           // Status text
           Text(
-            completed ? 'Done' : (isCurrent ? 'Now' : 'Upcoming'),
+            completed
+                ? context.locText(en: 'Done', ar: 'تم')
+                : (isCurrent
+                      ? context.locText(en: 'Now', ar: 'الآن')
+                      : context.locText(en: 'Upcoming', ar: 'قادم')),
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,

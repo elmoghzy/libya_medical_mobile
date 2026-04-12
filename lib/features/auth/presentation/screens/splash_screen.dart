@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../home/presentation/screens/patient_dashboard_screen.dart';
 import '../../../doctors/presentation/screens/doctor_dashboard_screen.dart';
@@ -145,8 +146,8 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                   const SizedBox(height: 32),
                   // Title
-                  const Text(
-                    'Libya Medical',
+                  Text(
+                    context.locText(en: 'Libya Medical', ar: 'ليبيا الطبية'),
                     style: TextStyle(
                       fontSize: 40,
                       fontWeight: FontWeight.w800,
@@ -157,7 +158,10 @@ class _SplashScreenState extends State<SplashScreen>
                   const SizedBox(height: 12),
                   // Subtitle
                   Text(
-                    'Your sanctuary for modern,\nreliable healthcare services.',
+                    context.locText(
+                      en: 'Your sanctuary for modern,\nreliable healthcare services.',
+                      ar: 'وجهتك الموثوقة لخدمات\nرعاية صحية حديثة.',
+                    ),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
@@ -180,7 +184,10 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'CONNECTING TO CARE',
+                        context.locText(
+                          en: 'CONNECTING TO CARE',
+                          ar: 'جارٍ الاتصال بالرعاية',
+                        ),
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
@@ -229,12 +236,15 @@ class _SplashScreenState extends State<SplashScreen>
             ),
           ),
           // Footer
-          const Positioned(
+          Positioned(
             bottom: 48,
             left: 0,
             right: 0,
             child: Text(
-              'LIBYA MEDICAL © 2024 • EXCELLENCE IN HEALTH',
+              context.locText(
+                en: 'LIBYA MEDICAL © 2024 • EXCELLENCE IN HEALTH',
+                ar: 'ليبيا الطبية © 2024 • التميز في الرعاية',
+              ),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 9,
