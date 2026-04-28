@@ -1,901 +1,781 @@
-# Libya Medical Mobile App - التوثيق الشامل 📱
+# Libya Medical Mobile App - التوثيق الحالي
 
-## 📋 نظرة عامة
+هذا الملف يصف **الحالة الفعلية الحالية** للمشروع كما هي موجودة في الكود داخل الـ workspace بتاريخ `2026-04-18`.
 
-**Libya Medical** هو تطبيق Flutter لإدارة الحجوزات الطبية في ليبيا. يربط المرضى بالأطباء ويوفر نظام حجز متطور مع تتبع قوائم الانتظار (Queue Tracking).
-
-### 🎯 الهدف من التطبيق
-
-- حجز مواعيد مع الأطباء بسهولة
-- تتبع قوائم الانتظار في الوقت الفعلي
-- حجز الغرف الطبية
-- إدارة الإشعارات
-- مصادقة آمنة باستخدام Firebase OTP
+> مهم: هذا التوثيق مبني على الكود الحالي نفسه، بما في ذلك الملفات المضافة حديثًا مثل `medical_records_screen.dart` و `notifications_screen.dart`. وجود ملف لا يعني دائمًا أن الميزة مربوطة بالكامل داخل كل مسارات التطبيق، لذلك تم توضيح ما هو "مربوط فعليًا" وما هو "موجود لكن غير مفعّل بالكامل".
 
 ---
 
-## 🏗️ معمارية المشروع (Clean Architecture)
+## نظرة عامة
 
-المشروع يتبع **Clean Architecture Pattern** مع **BLoC/Cubit** لإدارة الحالة:
+**Libya Medical Mobile** هو تطبيق Flutter ثنائي اللغة يقدّم تجربتين أساسيتين:
 
-```
-lib/
-├── core/                           # المكونات المشتركة
-│   ├── di/                         # Dependency Injection
-│   │   └── injection_container.dart
-│   ├── network/                    # طبقة الشبكة
-│   │   ├── dio_client.dart        # HTTP Client
-│   │   └── api_constants.dart     # API URLs
-│   ├── theme/                      # تصميم التطبيق
-│   │   └── app_colors.dart
-│   └── widgets/                    # Widgets مشتركة
-│       ├── bottom_nav_bar.dart
-│       └── app_top_bar.dart
-│
-├── features/                       # الميزات الرئيسية
-│   ├── auth/                       # Authentication Feature
-│   │   ├── data/
-│   │   │   ├── auth_models.dart
-│   │   │   └── auth_remote_data_source.dart
-│   │   ├── logic/
-│   │   │   ├── auth_cubit.dart
-│   │   │   └── auth_state.dart
-│   │   └── presentation/
-│   │       └── screens/
-│   │           ├── login_screen.dart
-│   │           └── otp_screen.dart
-│   │
-│   ├── doctors/                    # Doctors Feature
-│   │   ├── data/
-│   │   │   ├── models/
-│   │   │   │   └── doctor_model.dart
-│   │   │   └── datasources/
-│   │   │       └── doctors_remote_data_source.dart
-│   │   ├── logic/
-│   │   │   ├── doctors_cubit.dart
-│   │   │   ├── doctor_details_cubit.dart
-│   │   │   └── doctors_state.dart
-│   │   └── presentation/
-│   │       └── screens/
-│   │           ├── doctor_search_screen.dart
-│   │           ├── doctor_profile_screen.dart
-│   │           └── ...
-│   │
-│   ├── bookings/                   # Bookings Feature
-│   │   └── presentation/
-│   │       └── screens/
-│   │           └── booking_confirmation_screen.dart
-│   │
-│   └── home/                       # Home & Dashboards
-│       └── presentation/
-│           └── screens/
-│               ├── splash_screen.dart
-│               ├── patient_dashboard_screen.dart
-│               └── doctor_dashboard_screen.dart
-│
-└── main.dart                       # نقطة البداية
-```
+- تجربة **المريض**: onboarding, login/OTP, البحث عن الأطباء، الحجز، متابعة الحجوزات، وتتبع الطابور.
+- تجربة **الطبيب**: dashboard, إدارة الطابور، عرض الاستشارة، الجدول، والسجل الطبي.
+
+التطبيق يستخدم:
+
+- `flutter_bloc` لإدارة الحالة
+- `get_it` لحقن التبعيات
+- `dio` لطلبات الشبكة
+- `shared_preferences` للتخزين المحلي
+- `firebase_core` + `firebase_auth` لتسجيل الدخول عبر OTP
 
 ---
 
-## 📦 التقنيات المستخدمة
+## تغيير مهم حديثًا في الـ Auth
 
-### Dependencies الرئيسية
+من تاريخ `2026-04-18`، إرسال OTP لم يعد يبدأ مباشرة من Firebase.
 
-```yaml
-dependencies:
-  flutter_bloc: ^9.1.1          # State Management
-  equatable: ^2.0.8             # Value Equality
-  dio: ^5.9.2                   # HTTP Client
-  get_it: ^9.2.1                # Dependency Injection
-  shared_preferences: ^2.5.5    # Local Storage
-  intl: ^0.20.2                 # Date Formatting
-  
-  # Firebase Authentication
-  firebase_core: ^3.13.0
-  firebase_auth: ^5.6.1
-```
+الترتيب الحالي داخل التطبيق هو:
 
-### المعمارية
+1. `LoginScreen` يستدعي `AuthCubit.sendOtp`
+2. `AuthCubit` يستدعي `AuthRemoteDataSource.sendOtp`
+3. `AuthRemoteDataSource` يرسل `POST /auth/check-doctor-phone`
+4. إذا كانت الاستجابة `success: true`:
+   - يتم استدعاء `FirebaseAuth.verifyPhoneNumber`
+5. إذا كانت الاستجابة `403` أو `success: false`:
+   - يتم رمي `AuthException` بالرسالة العربية:
+   - `عذراً، رقمك غير مسجل في النظام. يرجى مراجعة إدارة العيادة.`
+6. `AuthCubit` يحول الخطأ إلى `AuthError`
+7. `LoginScreen` يعرض نفس الرسالة داخل `SnackBar`
 
-- **State Management:** BLoC/Cubit Pattern
-- **DI:** GetIt (Service Locator)
-- **HTTP Client:** Dio with Interceptors
-- **Local Storage:** SharedPreferences
-- **Authentication:** Firebase Phone Auth + Laravel Sanctum
+هذا يعني أن الـ OTP الحقيقي أصبح يعتمد على:
+
+- Firebase configuration
+- Laravel backend متاح
+- endpoint whitelist مفعل على backend
 
 ---
 
-## 🔐 نظام المصادقة (Authentication)
+## Snapshot فعلي للمشروع
 
-### تدفق المصادقة (Auth Flow)
+- عدد ملفات Dart داخل `lib/`: `46`
+- إجمالي أسطر Dart داخل `lib/` بدون ملفات `.backup`: `18569`
+- مجالات العمل الرئيسية داخل `features/`: `6`
+- ملفات `presentation/screens`: `20`
+- اللغات المدعومة: `العربية`, `الإنجليزية`
+- الأدوار المدعومة: `patient`, `doctor`
 
-```
-1. المستخدم يدخل رقم الهاتف (+218XXXXXXXXX)
-   ↓
-2. LoginScreen → sendOtp()
-   ↓
-3. Firebase يرسل SMS code
-   ↓
-4. OtpSent state → navigate to OtpScreen
-   ↓
-5. المستخدم يدخل 6 أرقام
-   ↓
-6. OtpScreen → verifyOtp()
-   ↓
-7. Firebase Verification → get UID
-   ↓
-8. Laravel API: POST /api/auth/verify-phone
-   Request: { phone: "+218...", firebase_uid: "..." }
-   Response: { token: "...", role: "patient", user: {...} }
-   ↓
-9. حفظ Token + Role في SharedPreferences
-   ↓
-10. AuthSuccess → navigate حسب الـ role
-    - patient → PatientDashboardScreen
-    - doctor → DoctorDashboardScreen
-```
+### المجالات الموجودة فعليًا
 
-### الملفات الرئيسية
+- `auth`
+- `bookings`
+- `doctors`
+- `facilities`
+- `home`
+- `queue`
 
-#### `lib/features/auth/data/auth_models.dart`
+### ملاحظة مهمة
 
-```dart
-enum UserRole { patient, doctor }
+لا توجد حاليًا مجلدات مستقلة باسم:
 
-class AuthResponse {
-  final String token;
-  final UserRole role;
-  final UserModel user;
-}
+- `features/rooms`
+- `features/notifications`
 
-class UserModel {
-  final int id;
-  final String name;
-  final String phone;
-  final UserRole role;
-}
-```
+لكن يوجد:
 
-#### `lib/features/auth/data/auth_remote_data_source.dart`
-
-**Methods:**
-- `sendOtp(String phoneNumber)` - يرسل OTP عبر Firebase
-- `verifyOtp(String verificationId, String smsCode)` - يتحقق من الكود
-- `authenticateWithBackend(String uid, String phone)` - يتصل بـ Laravel API
-- `signOut()` - تسجيل الخروج
-
-#### `lib/features/auth/logic/auth_state.dart`
-
-```dart
-sealed class AuthState extends Equatable {
-  - AuthInitial
-  - AuthLoading
-  - OtpSending
-  - OtpSent(String verificationId, String phoneNumber)
-  - OtpVerifying
-  - AuthSuccess(UserRole role, UserModel user)
-  - AuthError(String message)
-}
-```
-
-#### `lib/features/auth/logic/auth_cubit.dart`
-
-**Methods:**
-- `sendOtp(String phoneNumber)`
-- `verifyOtp(String verificationId, String smsCode, String phoneNumber)`
-- `resendOtp(String phoneNumber)`
-- `signOut()`
+- منطق للحجوزات الخاصة بالغرف داخل `BookingsCubit`
+- واجهة مستقلة للإشعارات داخل `lib/core/widgets/notifications_screen.dart`
 
 ---
 
-## 👨‍⚕️ ميزة الأطباء (Doctors Feature)
+## المعمارية الحالية
 
-### Data Models
+المشروع منظم بصورة قريبة من **feature-first + Cubit architecture** أكثر من كونه Clean Architecture صارمًا بالكامل.
 
-#### `lib/features/doctors/data/models/doctor_model.dart`
+### ما هو منظم بوضوح
 
-```dart
-class DoctorModel {
-  final int id;
-  final String name;
-  final String specialty;
-  final String consultationFee;
-  final bool isActive;
-  final List<ScheduleModel>? schedules;
-}
+- `core/` للمشترك بين جميع الميزات
+- `features/<feature>/data` للـ models و data sources
+- `features/<feature>/logic` للـ cubits/states
+- `features/<feature>/presentation/screens` للشاشات
 
-class ScheduleModel {
-  final int id;
-  final String dayOfWeek;
-  final String startTime;
-  final String endTime;
-  final int avgConsultationTime;
-}
+### ما ليس مفصولًا بالكامل
 
-class AvailableSlotsModel {
-  final List<ScheduleModel> schedules;
-  final List<String> slots;  // ["09:00", "09:20", "09:40"]
-}
-```
-
-### Data Source
-
-#### `lib/features/doctors/data/datasources/doctors_remote_data_source.dart`
-
-**Methods:**
-
-```dart
-// GET /api/doctors
-Future<List<DoctorModel>> getDoctors()
-
-// GET /api/doctors/{id}
-Future<DoctorModel> getDoctorDetails(int doctorId)
-
-// GET /api/doctors/{id}/slots?date=YYYY-MM-DD
-Future<AvailableSlotsModel> getAvailableSlots(int doctorId, String date)
-```
-
-### State Management
-
-#### `lib/features/doctors/logic/doctors_cubit.dart`
-
-**للقائمة الرئيسية:**
-
-```dart
-Methods:
-  - fetchDoctors()           // جلب جميع الأطباء
-  - refreshDoctors()         // تحديث القائمة
-  - searchDoctors(query)     // البحث بالاسم أو التخصص
-  - filterBySpecialty(spec)  // فلتر بالتخصص
-  - clearFilters()           // إزالة الفلاتر
-```
-
-**States:**
-- `DoctorsInitial`
-- `DoctorsLoading`
-- `DoctorsLoaded(doctors, filteredDoctors, searchQuery, selectedSpecialty)`
-- `DoctorsError(message, code)`
-
-#### `lib/features/doctors/logic/doctor_details_cubit.dart`
-
-**لصفحة الدكتور الواحد:**
-
-```dart
-Methods:
-  - fetchDoctorDetailsAndSlots(doctorId, date)  // جلب التفاصيل + المواعيد
-  - fetchDoctorDetails(doctorId)                // التفاصيل فقط
-  - fetchSlotsForDate(doctorId, date)           // المواعيد فقط
-  - selectSlot(slot)                            // اختيار موعد
-  - clearSelectedSlot()                         // إلغاء الاختيار
-  - reset()                                     // إعادة تعيين
-```
-
-**States:**
-- `DoctorDetailsInitial`
-- `DoctorDetailsLoading`
-- `DoctorDetailsLoaded(doctor, availableSlots, selectedDate, selectedSlot)`
-- `SlotsLoading(doctor, selectedDate)` - للتحديثات الجزئية
-- `DoctorDetailsError(message)`
-
-**Features:**
-- ✅ Caching: الدكتور يُحفظ مؤقتاً لتجنب إعادة التحميل عند تغيير التاريخ
-- ✅ Parallel Fetching: جلب التفاصيل والمواعيد معاً
-- ✅ Partial Updates: تحديث المواعيد فقط عند تغيير التاريخ
-
-### UI Screens
-
-#### `lib/features/doctors/presentation/screens/doctor_search_screen.dart`
-
-**Features:**
-- ✅ Search Bar - البحث بالاسم أو التخصص
-- ✅ Specialty Filter - فلتر التخصصات
-- ✅ Doctor Cards - عرض البطاقات مع الصور
-- ✅ Pull to Refresh - التحديث بالسحب
-- ✅ Loading State - مؤشر التحميل
-- ✅ Error Handling - معالجة الأخطاء
-- ✅ Empty State - حالة القائمة الفارغة
-
-**BLoC Integration:**
-```dart
-BlocBuilder<DoctorsCubit, DoctorsState>(
-  builder: (context, state) {
-    if (state is DoctorsLoading) return Loading();
-    if (state is DoctorsError) return ErrorWidget();
-    if (state is DoctorsLoaded) return DoctorsList();
-  }
-)
-```
-
-#### `lib/features/doctors/presentation/screens/doctor_profile_screen.dart`
-
-**Features:**
-- ✅ Doctor Info - الاسم، التخصص، السعر
-- ✅ Date Picker - اختيار التاريخ (7 أيام قادمة)
-- ✅ Time Slots - عرض المواعيد المتاحة
-- ✅ 12-Hour Format - تنسيق الوقت (9:00 AM)
-- ✅ Slot Selection - اختيار الموعد
-- ✅ Loading Indicators - مؤشرات التحميل
-- ✅ Auto-Refresh Slots - تحديث تلقائي عند تغيير التاريخ
-
-**Flow:**
-```dart
-1. BlocProvider creates DoctorDetailsCubit
-2. fetchDoctorDetailsAndSlots(doctorId, todayDate)
-3. User selects date → fetchSlotsForDate(doctorId, newDate)
-4. User selects slot → selectSlot(slot)
-5. User taps "احجز الآن" → Navigate to BookingConfirmationScreen
-```
+- لا توجد طبقة `domain/` مستقلة
+- بعض الشاشات الكبيرة تحتوي منطق UI كثيف وبيانات mock محلية
+- بعض الميزات تعمل محليًا بالكامل بدون repository/API layer منفصل
 
 ---
 
-## 🔗 تكامل API (API Integration)
+## Bootstrap وتشغيل التطبيق
 
-### Base Configuration
+### `lib/main.dart`
 
-**File:** `lib/core/network/api_constants.dart`
+التطبيق يبدأ من `main()` ويقوم بالآتي:
 
-```dart
-class ApiConstants {
-  static const String baseUrl = 'http://10.0.2.2:8000';  // Android Emulator
-  static const String apiPath = '/api';
-  
-  // Auth Endpoints
-  static const String verifyPhone = '/auth/verify-phone';
-  static const String register = '/auth/register';
-  static const String login = '/auth/login';
-  static const String logout = '/auth/logout';
-  
-  // Doctors Endpoints
-  static const String doctors = '/doctors';
-  static String doctorDetails(int id) => '/doctors/$id';
-  static String doctorSlots(int id) => '/doctors/$id/slots';
-  
-  // Bookings Endpoints
-  static const String bookings = '/bookings';
-  static String bookingDetails(int id) => '/bookings/$id';
-  static String queueStatus(int id) => '/bookings/$id/queue-status';
-  static String cancelBooking(int id) => '/bookings/$id/cancel';
-  static String checkIn(int id) => '/bookings/$id/check-in';
-}
-```
+1. `WidgetsFlutterBinding.ensureInitialized()`
+2. محاولة تهيئة Firebase فقط على:
+   - Android
+   - iOS
+   - Web
+   - macOS
+3. تخطي Firebase على Linux/Windows Desktop مع رسالة Dev Mode
+4. تهيئة التبعيات عبر `initDependencies()`
+5. تشغيل `MyApp`
 
-### HTTP Client
+### الـ BlocProviders العالمية
 
-**File:** `lib/core/network/dio_client.dart`
+داخل `MyApp` يتم تسجيل:
 
-```dart
-class DioClient {
-  static final DioClient _instance = DioClient._internal();
-  static DioClient get instance => _instance;
-  
-  late Dio _dio;
-  
-  Features:
-    ✅ Singleton Pattern
-    ✅ Request/Response Interceptors
-    ✅ Auto Token Injection
-    ✅ Error Handling
-    ✅ Logging
-}
-```
+- `AuthCubit`
+- `LocaleCubit`
+- `ClinicQueueCubit`
 
-### API Response Format
+وهذا مهم لأن:
 
-#### Standard Response (معظم Endpoints)
-
-```json
-{
-  "success": true,
-  "message": "Operation successful",
-  "data": { ... }
-}
-```
-
-#### Auth Verify-Phone Response (استثناء)
-
-```json
-{
-  "token": "1|xxxx",
-  "role": "patient",
-  "user": {
-    "id": 1,
-    "name": "Name",
-    "phone": "+218..."
-  }
-}
-```
-
-### Error Handling
-
-```dart
-try {
-  final result = await dataSource.fetchData();
-  emit(Success(result));
-} on DioException catch (e) {
-  if (e.response?.statusCode == 401) {
-    emit(Error('Unauthorized'));
-  } else if (e.response?.statusCode == 422) {
-    emit(Error('Validation Error'));
-  } else {
-    emit(Error('Network Error'));
-  }
-} catch (e) {
-  emit(Error('Unexpected Error: $e'));
-}
-```
+- حالة اللغة متاحة على مستوى التطبيق كله
+- حالة الطابور المحلية متاحة لشاشات المريض والطبيب
 
 ---
 
-## 💉 حقن التبعيات (Dependency Injection)
+## الترجمة والواجهة
 
-**File:** `lib/core/di/injection_container.dart`
+### الترجمة
 
-```dart
-final GetIt sl = GetIt.instance;
+الملف: `lib/core/localization/app_localizations.dart`
 
-Future<void> initDependencies() async {
-  // ============ External ============
-  final sharedPreferences = await SharedPreferences.getInstance();
-  sl.registerSingleton<SharedPreferences>(sharedPreferences);
+الحالة الحالية:
 
-  // ============ Data Sources ============
-  sl.registerLazySingleton<IAuthRemoteDataSource>(
-    () => AuthRemoteDataSource()
-  );
-  
-  sl.registerLazySingleton<IDoctorsRemoteDataSource>(
-    () => DoctorsRemoteDataSource()
-  );
+- الترجمة **يدوية** داخل Map محلية
+- اللغات المدعومة حاليًا: `ar`, `en`
+- يوجد extension مهم:
+  - `context.l10n`
+  - `context.locText(en: ..., ar: ...)`
 
-  // ============ Cubits ============
-  sl.registerFactory<AuthCubit>(
-    () => AuthCubit(
-      authDataSource: sl<IAuthRemoteDataSource>(),
-      sharedPreferences: sl<SharedPreferences>(),
-    ),
-  );
-  
-  sl.registerFactory<DoctorsCubit>(
-    () => DoctorsCubit(
-      doctorsDataSource: sl<IDoctorsRemoteDataSource>(),
-    ),
-  );
-  
-  sl.registerFactory<DoctorDetailsCubit>(
-    () => DoctorDetailsCubit(
-      doctorsDataSource: sl<IDoctorsRemoteDataSource>(),
-    ),
-  );
-}
-```
+### الثيم
 
-### استخدام DI في التطبيق
+الملف: `lib/core/theme/app_theme.dart`
 
-```dart
-// في main.dart
-void main() async {
-  await initDependencies();
-  runApp(MyApp());
-}
+الحالة الحالية:
 
-// في الشاشات
-BlocProvider(
-  create: (_) => sl<AuthCubit>(),
-  child: LoginScreen(),
-)
-
-// أو مباشرة
-context.read<DoctorsCubit>().fetchDoctors();
-```
+- `ThemeData` واحد فاتح `lightTheme`
+- Material 3 مفعّل
+- `InputDecorationTheme` موحد
+- `ElevatedButtonTheme` موحد
+- الألوان الأساسية معرفة في `app_colors.dart`
 
 ---
 
-## 🎨 نظام التصميم (Design System)
+## المكونات المشتركة
 
-### الألوان (Colors)
+### `AppTopBar`
 
-**File:** `lib/core/theme/app_colors.dart`
+الملف: `lib/core/widgets/app_top_bar.dart`
 
-```dart
-class AppColors {
-  // Primary Colors
-  static const Color primary = Color(0xFF00435A);
-  static const Color primaryContainer = Color(0xFF005C7A);
-  static const Color onPrimary = Color(0xFFFFFFFF);
-  
-  // Secondary Colors
-  static const Color secondary = Color(0xFF64D8D8);
-  static const Color onSecondary = Color(0xFF003738);
-  
-  // Tertiary Colors
-  static const Color tertiary = Color(0xFF004546);
-  static const Color tertiaryFixedDim = Color(0xFF64D8D8);
-  
-  // Surface Colors
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceContainerLow = Color(0xFFF2F4F6);
-  static const Color onSurface = Color(0xFF191C1D);
-  
-  // Status Colors
-  static const Color error = Color(0xFFBA1A1A);
-  static const Color success = Color(0xFF64D8D8);
-  static const Color warning = Color(0xFFF59E0B);
-  
-  // Text Colors
-  static const Color textPrimary = Color(0xFF191C1D);
-  static const Color textSecondary = Color(0xFF3F4948);
-  static const Color textDisabled = Color(0xFF7A8C8A);
-}
-```
+يدعم:
 
-### الـ Widgets المشتركة
+- عنوان اختياري
+- زر رجوع عبر `showBackButton`
+- زر تغيير اللغة
+- زر إشعارات
+- Avatar بسيط
 
-#### `lib/core/widgets/bottom_nav_bar.dart`
+الحالة الفعلية الآن:
 
-```dart
-BottomNavBar({
-  required int currentIndex,
-  required Function(int) onTap,
-  bool isDoctor = false,
-})
+- زر الإشعارات **ليس موصولًا مركزيًا في كل مكان**
+- `onNotificationTap` مستخدم فعليًا فقط في:
+  - `PatientDashboardScreen`
 
-Screens:
-  - Patient: Home, Search, Queue, Notifications, Profile
-  - Doctor: Home, Schedule, Queue, Notifications, Profile
-```
+### `AppBottomNavBar`
 
-#### `lib/core/widgets/app_top_bar.dart`
+الملف: `lib/core/widgets/bottom_nav_bar.dart`
 
-```dart
-AppTopBar({
-  String? title,
-  bool showBack = false,
-  List<Widget>? actions,
-})
-```
+الحالة الحالية:
+
+- نسخة للمريض:
+  - Home
+  - Search
+  - Bookings
+  - Profile
+- نسخة للطبيب:
+  - Home
+  - Queue
+  - Schedule
+  - Profile
+
+### `NotificationsScreen`
+
+الملف: `lib/core/widgets/notifications_screen.dart`
+
+الحالة الحالية:
+
+- شاشة مستقلة موجودة داخل الكود
+- تعرض بطاقات إشعارات مبنية على:
+  - `AuthCubit.currentRole`
+  - `ClinicQueueCubit`
+- **غير مربوطة حتى الآن بشكل عام** من `AppTopBar`
 
 ---
 
-## 📱 الشاشات المنفذة (Implemented Screens)
+## Dependency Injection
 
-### ✅ Auth Screens
-1. **Splash Screen** - شاشة البداية
-2. **Login Screen** - تسجيل الدخول بـ OTP
-3. **OTP Screen** - إدخال رمز التحقق
-4. **Profile Setup Screen** - إعداد الملف الشخصي
+الملف: `lib/core/di/injection_container.dart`
 
-### ✅ Patient Screens
-5. **Patient Dashboard** - لوحة التحكم للمريض
-6. **Doctor Search** - البحث عن الأطباء
-7. **Doctor Profile** - ملف الطبيب + المواعيد
-8. **Booking Confirmation** - تأكيد الحجز
-9. **Facility Listing** - قائمة الغرف
-10. **Queue Tracker** - تتبع قائمة الانتظار
+المسجل فعليًا:
 
-### ✅ Doctor Screens
-11. **Doctor Dashboard** - لوحة التحكم للطبيب
-12. **Clinic Queue Manager** - إدارة قائمة الانتظار
-13. **Consultation View** - عرض الاستشارة
-14. **Schedule Manager** - إدارة الجدول
+- `SharedPreferences` كـ singleton
+- `IAuthRemoteDataSource`
+- `IDoctorsRemoteDataSource`
+- `IBookingsRemoteDataSource`
+- `AuthCubit`
+- `DoctorsCubit`
+- `DoctorDetailsCubit`
+- `BookingsCubit`
+- `LocaleCubit`
+- `ClinicQueueCubit`
+
+هذا يعني أن المشروع **لا يعتمد فقط على Auth/Doctors** كما كان مذكورًا سابقًا، بل `Bookings` و `Locale` و `Queue` أيضًا موصولة فعليًا.
 
 ---
 
-## 🚀 كيفية التشغيل
+## الشبكة والـ API
+
+### `ApiConstants`
+
+الملف: `lib/core/network/api_constants.dart`
+
+الحالة الحالية:
+
+- `baseUrl` الحالي هو:
+
+```dart
+http://10.0.2.2:8000/api
+```
+
+### Endpoints المعرفة فعليًا
+
+- Auth
+  - `/auth/verify-phone`
+  - `/auth/check-doctor-phone`
+  - `/auth/register`
+  - `/auth/login`
+  - `/auth/logout`
+- Doctors
+  - `/doctors`
+  - `/doctors/{id}`
+  - `/doctors/{id}/slots`
+- Bookings
+  - `/bookings`
+  - `/bookings/{id}`
+  - `/bookings/{id}/queue-status`
+  - `/bookings/{id}/cancel`
+  - `/bookings/{id}/check-in`
+- Rooms
+  - `/rooms`
+- Notifications
+  - `/notifications`
+  - `/notifications/device-token`
+
+### `DioClient`
+
+الملف: `lib/core/network/dio_client.dart`
+
+الحالة الحالية:
+
+- Singleton بسيط
+- يضيف:
+  - `Accept: application/json`
+  - `Content-Type: application/json`
+- يحقن `Authorization: Bearer <token>` تلقائيًا من `SharedPreferences`
+
+لا توجد حاليًا:
+
+- response logging interceptor متقدم
+- refresh token flow
+- retry policy
+
+---
+
+## حالة الميزات بالتفصيل
+
+## 1. Auth
+
+المجلد: `lib/features/auth`
+
+### الملفات الموجودة فعليًا
+
+- `data/auth_models.dart`
+- `data/auth_remote_data_source.dart`
+- `logic/auth_cubit.dart`
+- `logic/auth_state.dart`
+- `presentation/screens/login_screen.dart`
+- `presentation/screens/onboarding_screen.dart`
+- `presentation/screens/otp_screen.dart`
+- `presentation/screens/phone_verification_screen.dart`
+- `presentation/screens/profile_setup_screen.dart`
+- `presentation/screens/splash_screen.dart`
+- `widgets/auth_toggle_button.dart`
+
+### ما يعمل فعليًا
+
+- Splash screen يقرأ:
+  - `access_token`
+  - `user_role`
+- إذا كانت الجلسة موجودة:
+  - يوجّه إلى `PatientDashboardScreen` أو `DoctorDashboardScreen`
+- إذا لم توجد جلسة:
+  - يذهب إلى `OnboardingScreen`
+
+### مسارات المصادقة الحالية
+
+يوجد **مساران** في المشروع:
+
+1. `OnboardingScreen -> PhoneVerificationScreen`
+2. `LoginScreen -> OtpScreen`
+
+### `AuthRemoteDataSource`
+
+يدعم فعليًا:
+
+- `sendOtp`
+- `verifyOtp`
+- `authenticateWithBackend`
+- `signOut`
+
+### تدفق `sendOtp` الحالي
+
+`sendOtp` لم يعد مجرد Firebase call.
+
+التسلسل الحالي:
+
+1. تهيئة الرقم إلى صيغة API/Firebase
+2. استدعاء `POST /auth/check-doctor-phone`
+3. لو backend رفض الرقم:
+   - يتم رمي `AuthException`
+   - الـ code المستخدم حاليًا: `doctor-not-whitelisted`
+   - الرسالة:
+   - `عذراً، رقمك غير مسجل في النظام. يرجى مراجعة إدارة العيادة.`
+4. لو backend وافق:
+   - يتم استدعاء `FirebaseAuth.verifyPhoneNumber`
+5. عند نجاح `codeSent`:
+   - يتم إصدار `OtpSent` من الـ Cubit
+
+### مسؤولية `AuthCubit` في هذا التدفق
+
+- يمسك `AuthException` القادمة من data source
+- يحولها إلى `AuthError(message, code, canRetry)`
+- في حالة `doctor-not-whitelisted`:
+  - `canRetry` تكون `false`
+  - لذلك لا يظهر زر retry داخل الـ `SnackBar`
+
+### مسؤولية `LoginScreen`
+
+- تعرض `SnackBar` باستخدام **نفس** `state.message` بدون إعادة صياغة
+- هذا مهم لأن رسالة whitelist عربية ومقصودة لتوجيه المستخدم إلى إدارة العيادة
+
+### ملاحظات مهمة
+
+- Firebase Phone Auth يعمل فقط على المنصات المدعومة
+- OTP الحقيقي يحتاج الآن backend whitelist check ناجح قبل Firebase
+- على Linux/Windows Desktop، يتم الاعتماد على **Dev Mode** الموجود في `LoginScreen`
+- `AuthState` الحالية تتضمن:
+  - `AuthInitial`
+  - `AuthLoading`
+  - `OtpSent`
+  - `OtpVerifying`
+  - `AuthSuccess`
+  - `AuthAuthenticated`
+  - `AuthLoggedOut`
+  - `AuthError`
+- `ProfileSetupScreen` موجودة كواجهة إعداد ملف شخصي، لكنها حاليًا تنتهي إلى `PatientDashboardScreen` فقط عند الإكمال، بغض النظر عن الدور المختار داخل الشاشة
+
+### اختلاف مهم عن التوثيق القديم
+
+- لا توجد حالة باسم `OtpSending`
+- يوجد `AuthAuthenticated` و `AuthLoggedOut`
+- الـ onboarding flow موجود فعليًا، ولم يكن موثقًا بشكل كافٍ
+
+---
+
+## 2. Doctors
+
+المجلد: `lib/features/doctors`
+
+### Data layer
+
+- `DoctorModel`
+- `ScheduleModel`
+- `AvailableSlotsModel`
+- `DoctorsRemoteDataSource`
+
+### Logic layer
+
+- `DoctorsCubit`
+- `DoctorDetailsCubit`
+- `DoctorsState`
+- `DoctorDetailsState`
+
+### API-backed features
+
+- `DoctorSearchScreen`
+  - fetch doctors from API
+  - search by name/specialty
+  - filter by specialty
+  - refresh data
+
+- `DoctorProfileScreen`
+  - fetch doctor details
+  - fetch available slots
+  - cache doctor object locally داخل cubit
+  - update slots عند تغيير التاريخ
+  - navigate إلى `BookingConfirmationScreen`
+
+### Doctor workspace screens
+
+- `DoctorDashboardScreen`
+- `ClinicQueueManagerScreen`
+- `ConsultationViewScreen`
+- `ScheduleManagerScreen`
+- `MedicalRecordsScreen`
+
+الحالة الحالية لهذه الشاشات:
+
+- ليست معتمدة على backend حقيقي
+- تعتمد على:
+  - local UI state
+  - `ClinicQueueCubit`
+  - بيانات mock داخل الشاشة
+
+### إضافات حديثة في الـ doctor workflow
+
+- `MedicalRecordsScreen` أضيفت حديثًا
+- `ConsultationViewScreen` تحتوي الآن على:
+  - بحث داخل `الوصفة الطبية`
+  - بحث داخل `التحاليل`
+- `ScheduleManagerScreen` أصبح فيها:
+  - تنقل أسبوعي فعلي بالسهمين يمين/يسار
+
+---
+
+## 3. Bookings
+
+المجلد: `lib/features/bookings`
+
+### الحالة الفعلية
+
+ميزة `bookings` ليست "TODO" فقط كما كان في التوثيق القديم، بل يوجد بها:
+
+- model فعلي `BookingModel`
+- data source فعلي `BookingsRemoteDataSource`
+- cubit فعلي `BookingsCubit`
+- states فعلية `BookingsState`
+- شاشة UI مربوطة جزئيًا `BookingConfirmationScreen`
+
+### `BookingsRemoteDataSource`
+
+يدعم فعليًا:
+
+- `createBooking`
+- `getMyBookings`
+- `cancelBooking`
+- `checkInBooking`
+
+### `BookingsCubit`
+
+يدعم فعليًا:
+
+- `createDoctorBooking`
+- `createRoomBooking`
+- `fetchMyBookings`
+- `refreshBookings`
+- `cancelBooking`
+- `checkInBooking`
+- `filterByStatus`
+- `getUpcomingBookings`
+- `getPastBookings`
+
+### الشاشات المرتبطة
+
+- `BookingConfirmationScreen`
+  - تستخدم `createDoctorBooking`
+  - تعرض dialog نجاح مع رقم الدور
+
+- `PatientBookingsScreen`
+  - تجلب الحجوزات من API
+  - تقسيم إلى:
+    - Upcoming
+    - History
+  - تدعم `RefreshIndicator`
+
+### ملاحظات دقيقة
+
+- منطق حجز الغرف موجود في الـ cubit/data source
+- لكن لا يوجد حاليًا flow واجهة مكتمل يربط `FacilityListingScreen` مباشرة بـ `createRoomBooking`
+- `PatientBookingsScreen` تعرض الحجوزات ولكن لا تملك حتى الآن أزرار UI مباشرة للإلغاء أو تسجيل الحضور داخل البطاقة نفسها
+
+---
+
+## 4. Queue
+
+المجلد: `lib/features/queue`
+
+### الحالة الحالية
+
+ميزة `queue` في هذا المشروع تعمل كمحاكاة محلية قوية نسبيًا عبر:
+
+- `ClinicQueueCubit`
+- `QueueTrackerScreen`
+
+### ما يقدمه `ClinicQueueCubit`
+
+- patient list initial state
+- `callPatient`
+- `completePatient`
+- `addPatient`
+- `addDelayToActivePatient`
+- `estimatedStartMinutesByPatient`
+- `waitMinutesFor`
+- `patientsAheadOf`
+- إحصاءات:
+  - `completedCount`
+  - `activeCount`
+  - `waitingCount`
+  - `totalPatients`
+
+### تنبيهات الطابور
+
+يوجد نوعان:
+
+- `QueueAlertType.call`
+- `QueueAlertType.delay`
+
+ويتم تخزين آخر تنبيه في:
+
+- `ClinicQueueState.latestAlert`
+
+### الشاشات المستفيدة
+
+- `QueueTrackerScreen`
+- `PatientDashboardScreen`
+- `ClinicQueueManagerScreen`
+- `ConsultationViewScreen`
+- `MedicalRecordsScreen`
+
+### ملاحظة مهمة
+
+هذه الميزة **ليست مربوطة حاليًا بـ API حقيقي أو WebSocket**، لكنها مستخدمة فعليًا داخل التطبيق لتشغيل تجربة المريض والطبيب محليًا.
+
+---
+
+## 5. Home / Patient Experience
+
+المجلد: `lib/features/home`
+
+### الشاشات الفعلية
+
+- `PatientDashboardScreen`
+- `PatientBookingsScreen`
+- `PatientProfileScreen`
+- `patient_tab_navigation.dart` helper
+
+### `PatientDashboardScreen`
+
+تحتوي على:
+
+- bottom navigation داخلي
+- live queue card
+- CTA grid
+- upcoming appointments section
+- live status section
+- dialog يظهر عند وصول `latestAlert` للمريض المتعقَّب
+
+### ملاحظة
+
+زر الجرس في `PatientDashboardScreen` موصول حاليًا إلى:
+
+- `QueueTrackerScreen`
+
+وليس إلى شاشة إشعارات عامة بعد.
+
+---
+
+## 6. Facilities
+
+المجلد: `lib/features/facilities`
+
+### `FacilityListingScreen`
+
+الحالة الحالية:
+
+- شاشة UI موجودة
+- تحتوي:
+  - hero section
+  - search bar
+  - filter chips
+  - quick stats
+  - قائمة مرافق ثابتة محليًا
+
+### دقة التوثيق هنا
+
+هذه الشاشة **ليست API-backed حاليًا**، وتستخدم بيانات mock داخل `_facilities`.
+
+---
+
+## الشاشات الموجودة فعليًا
+
+### Auth
+
+1. `SplashScreen`
+2. `OnboardingScreen`
+3. `PhoneVerificationScreen`
+4. `LoginScreen`
+5. `OtpScreen`
+6. `ProfileSetupScreen`
+
+### Patient / Shared
+
+7. `PatientDashboardScreen`
+8. `DoctorSearchScreen`
+9. `DoctorProfileScreen`
+10. `BookingConfirmationScreen`
+11. `FacilityListingScreen`
+12. `PatientBookingsScreen`
+13. `PatientProfileScreen`
+14. `QueueTrackerScreen`
+
+### Doctor
+
+15. `DoctorDashboardScreen`
+16. `ClinicQueueManagerScreen`
+17. `ConsultationViewScreen`
+18. `ScheduleManagerScreen`
+19. `MedicalRecordsScreen`
+
+### Helper file داخل screens
+
+20. `patient_tab_navigation.dart`
+
+---
+
+## الملفات التي تغيّرت فعليًا في الـ worktree الحالي
+
+هذه الملفات موجودة الآن في الشجرة المحلية ويجب اعتبارها ضمن الحالة الحالية:
+
+- `lib/features/doctors/presentation/screens/medical_records_screen.dart`
+- `lib/core/widgets/notifications_screen.dart`
+- `lib/features/doctors/presentation/screens/consultation_view_screen.dart`
+- `lib/features/doctors/presentation/screens/doctor_dashboard_screen.dart`
+- `lib/features/doctors/presentation/screens/schedule_manager_screen.dart`
+
+### أثر هذه التغييرات
+
+- إضافة شاشة سجل طبي للطبيب
+- ربط زر `السجل الطبي` في الداشبورد والاستشارة
+- إضافة بحث داخل الوصفة الطبية والتحاليل
+- إصلاح أسهم تغيير الأسبوع في الجدول
+- تجهيز شاشة إشعارات مستقلة لم يتم ربطها بالكامل بعد
+
+---
+
+## الفجوات الحالية
+
+### Notifications
+
+- يوجد endpoint constants
+- توجد شاشة UI مستقلة
+- لا يوجد Cubit/Data Source/flow كامل بعد
+- لا يوجد ربط مركزي كامل من `AppTopBar`
+
+### Facilities / Rooms
+
+- لا يوجد `rooms` feature module منفصل
+- لا يوجد API integration حاليًا لشاشة المرافق
+
+### Consultation / Records
+
+- الاستشارة تعمل محليًا
+- السجل الطبي يعمل محليًا
+- لا يوجد حفظ فعلي backend للملاحظات أو التحاليل أو الوصفات داخل هذه الشاشات
+
+### Navigation consistency
+
+- بعض الشاشات تستخدم `AppTopBar`
+- بعض الشاشات ما زالت تستخدم `AppBar` أو back handling يدوي
+- السلوك ليس موحدًا بالكامل بعد على كل الصفحات
+
+---
+
+## كيفية التشغيل حاليًا
 
 ### المتطلبات
 
-```bash
-# Flutter SDK
-flutter --version
-# Flutter 3.x or higher
-
-# Firebase CLI (Optional)
-npm install -g firebase-tools
-
-# Android Studio / VS Code
-# Android Emulator أو جهاز حقيقي
-```
+- Flutter SDK حديث
+- Android emulator أو device
+- Laravel backend متاح إذا أردت اختبار ميزات API
+- Firebase configured إذا أردت OTP حقيقي
 
 ### خطوات التشغيل
 
-#### 1. Clone المشروع
-
-```bash
-git clone [repository-url]
-cd libya_medical_mobile
-```
-
-#### 2. تثبيت Dependencies
-
 ```bash
 flutter pub get
-```
-
-#### 3. إعداد Firebase
-
-```bash
-# تأكد من وجود
-android/app/google-services.json
-ios/Runner/GoogleService-Info.plist
-```
-
-#### 4. تشغيل Laravel Backend
-
-```bash
-# في مجلد Laravel API
-php artisan serve
-# سيعمل على http://localhost:8000
-```
-
-#### 5. تشغيل التطبيق
-
-```bash
-# تشغيل على Emulator
 flutter run
-
-# أو build APK
-flutter build apk --release
-
-# APK موجود في:
-build/app/outputs/flutter-apk/app-release.apk
 ```
 
----
+### ملاحظات التشغيل
 
-## 🔧 الإعدادات المهمة
-
-### تغيير Base URL
-
-**في حالة استخدام Laravel على السيرفر:**
+- على Android emulator يستخدم المشروع:
 
 ```dart
-// lib/core/network/api_constants.dart
-class ApiConstants {
-  // للـ Android Emulator → localhost
-  static const String baseUrl = 'http://10.0.2.2:8000';
-  
-  // للـ iOS Simulator → localhost
-  static const String baseUrl = 'http://localhost:8000';
-  
-  // للجهاز الحقيقي → IP Address
-  static const String baseUrl = 'http://192.168.1.X:8000';
-  
-  // للـ Production
-  static const String baseUrl = 'https://your-domain.com';
-}
+http://10.0.2.2:8000/api
 ```
 
-### تنسيق رقم الهاتف
+- الـ backend يجب أن يوفّر endpoint:
 
-```dart
-// Firebase يحتاج: +218XXXXXXXXX
-// Laravel API يحتاج: 218XXXXXXXXX (بدون +)
-
-// في auth_remote_data_source.dart
-String formatPhoneForFirebase(String phone) {
-  if (!phone.startsWith('+')) return '+$phone';
-  return phone;
-}
-
-String formatPhoneForApi(String phone) {
-  return phone.replaceFirst('+', '');
-}
+```text
+/auth/check-doctor-phone
 ```
+
+- بدون هذا الـ endpoint لن يرسل التطبيق Firebase OTP من `LoginScreen`
+- على Linux/Windows Desktop لن يعمل Firebase Phone Auth
+- استخدم `Dev Mode` من `LoginScreen` لاختبار الدخول المحلي بسرعة
 
 ---
 
-## 📊 حالة المشروع (Project Status)
+## تقييم الحالة الحالية
 
-### ✅ مكتمل (Completed)
+### ميزات قوية ومتصلة فعليًا
 
-| Feature | Progress | Files |
-|---------|----------|-------|
-| **Auth System** | 100% | 6 files |
-| **Doctors List** | 100% | 5 files |
-| **Doctor Profile** | 100% | 3 files |
-| **Search & Filter** | 100% | Integrated |
-| **Available Slots** | 100% | Integrated |
-| **UI Screens** | 100% | 14 screens |
-| **DI Setup** | 100% | 1 file |
-| **Network Layer** | 100% | 2 files |
+- Auth
+- Doctors list/details/slots
+- Doctor booking creation
+- Bookings fetching
 
-### 🚧 قيد التنفيذ (In Progress)
+### ميزات تعمل محليًا داخل التطبيق
 
-| Feature | Progress | Status |
-|---------|----------|--------|
-| **Bookings Creation** | 20% | تحتاج `POST /api/bookings` |
-| **Rooms Feature** | 0% | لم تبدأ |
-| **Queue Tracking** | 0% | UI جاهز، تحتاج API |
-| **Notifications** | 0% | لم تبدأ |
+- Queue simulation
+- Queue tracker
+- Doctor queue management
+- Consultation workspace
+- Schedule manager
+- Medical records screen
 
-### 📝 الخطوات القادمة (Next Steps)
+### ميزات ما زالت واجهات أو تجهيزات جزئية
 
-#### Phase 1: Bookings Feature
-
-```
-□ Create BookingsRemoteDataSource
-  - POST /api/bookings
-  - GET /api/bookings
-  - POST /api/bookings/{id}/cancel
-
-□ Create BookingsCubit + States
-  - createBooking()
-  - fetchMyBookings()
-  - cancelBooking()
-
-□ Update BookingConfirmationScreen
-  - API integration
-  - Success/Error handling
-  - Navigation
-```
-
-#### Phase 2: Rooms Feature
-
-```
-□ Create RoomsRemoteDataSource
-  - GET /api/rooms?booking_date=X&end_date=Y
-
-□ Create RoomsCubit + States
-  - fetchRooms()
-  - filterByDate()
-
-□ Update FacilityListingScreen
-  - BLoC integration
-  - Real data
-```
-
-#### Phase 3: Queue Tracking
-
-```
-□ Create QueueRemoteDataSource
-  - GET /api/bookings/{id}/queue-status
-  - POST /api/bookings/{id}/check-in
-
-□ Create QueueCubit + States
-  - fetchQueueStatus()
-  - checkIn()
-  - Auto-refresh every X seconds
-
-□ Update QueueTrackerScreen
-  - Real-time updates
-  - WebSocket (optional)
-```
-
-#### Phase 4: Notifications
-
-```
-□ Create NotificationsRemoteDataSource
-  - GET /api/notifications
-  - POST /api/notifications/{id}/read
-  - POST /api/notifications/device-token
-
-□ Setup FCM (Firebase Cloud Messaging)
-  - Device token registration
-  - Background notifications
-  - Foreground handlers
-
-□ Create NotificationsCubit + States
-  - fetchNotifications()
-  - markAsRead()
-```
+- Facilities/rooms UI
+- General notifications integration
+- Backend persistence for consultation data
 
 ---
 
-## 🐛 المشاكل الشائعة (Common Issues)
+## خلاصة دقيقة
 
-### 1. Firebase Auth Error
+المشروع الحالي **ليس مجرد UI mockup**، وفي نفس الوقت **ليس API-complete بالكامل**.
 
-```
-Error: PERMISSION_DENIED
-```
+الوصف الأدق هو:
 
-**الحل:**
-- تأكد من تفعيل Phone Authentication في Firebase Console
-- تأكد من وجود `google-services.json` و `GoogleService-Info.plist`
+- API-backed في:
+  - auth
+  - doctors
+  - bookings
+- local-simulated في:
+  - queue
+  - consultation
+  - doctor schedule
+  - medical records
+- static/mock UI في:
+  - facilities
+  - بعض أجزاء dashboard/profile/settings
 
-### 2. Network Error
-
-```
-DioException: Connection refused
-```
-
-**الحل:**
-```dart
-// Android Emulator → 10.0.2.2
-// iOS Simulator → localhost
-// Real Device → Your Computer's IP (192.168.1.X)
-
-// تأكد من Laravel يعمل:
-php artisan serve --host=0.0.0.0
-```
-
-### 3. Gradle Build Error
-
-```
-Corrupted cache
-```
-
-**الحل:**
-```bash
-flutter clean
-rm -rf ~/.gradle/caches/
-flutter pub get
-flutter build apk
-```
-
-### 4. BLoC State Not Updating
-
-```dart
-// ❌ Wrong
-context.read<AuthCubit>().state;
-
-// ✅ Correct
-BlocBuilder<AuthCubit, AuthState>(
-  builder: (context, state) { ... }
-)
-```
-
----
-
-## 📚 الموارد والمراجع (Resources)
-
-### Documentation
-
-- [Flutter Docs](https://flutter.dev/docs)
-- [BLoC Library](https://bloclibrary.dev/)
-- [Dio Package](https://pub.dev/packages/dio)
-- [Firebase Auth](https://firebase.google.com/docs/auth)
-- [GetIt DI](https://pub.dev/packages/get_it)
-
-### Laravel API
-
-- **Base URL:** `{{APP_URL}}/api`
-- **Documentation:** `LIBYA_MEDICAL_API_DOCS.md` (مرفق مع المشروع)
-
-### Design Assets
-
-- **Figma/HTML:** `/path/to/stitch.zip` (التصميمات الأصلية)
-- **Icons:** Material Icons + Custom Assets
-
----
-
-## 👥 الفريق (Team)
-
-- **Mobile Developer:** Flutter + Clean Architecture
-- **Backend Developer:** Laravel API + Firebase
-- **UI/UX Designer:** HTML Mockups
-- **Product Owner:** Libya Medical Team
-
----
-
-## 📄 الترخيص (License)
-
-هذا المشروع ملك لـ **Libya Medical** ومحمي بحقوق الطبع والنشر.
-
----
-
-## 📞 الدعم (Support)
-
-للمساعدة أو الأسئلة:
-- **Email:** support@libya-medical.ly
-- **Phone:** +218 XXX XXX XXX
-
----
-
-## 🎯 الخلاصة
-
-المشروع في حالة ممتازة مع:
-- ✅ Auth System كامل ومتكامل
-- ✅ Doctors Feature كامل (List + Details + Slots)
-- ✅ Clean Architecture بشكل صحيح
-- ✅ BLoC Pattern متبع بدقة
-- ✅ UI Screens جميعها منفذة
-- 🚧 Bookings, Rooms, Queue, Notifications تحتاج API Integration
-
-**الخطوة التالية المقترحة:** إكمال **Bookings Feature** لإتمام رحلة المستخدم الكاملة من البحث → الحجز → التتبع.
-
----
-
-**آخر تحديث:** 2026-04-08  
-**الإصدار:** 1.0.0-alpha
+هذا هو الوضع الحقيقي الحالي للتطبيق داخل الكود بتاريخ `2026-04-18`.

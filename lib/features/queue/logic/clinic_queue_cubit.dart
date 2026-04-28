@@ -18,6 +18,7 @@ class ClinicQueuePatient extends Equatable {
     required this.genderEn,
     required this.genderAr,
     required this.queueNumber,
+    required this.appointmentDate,
     required this.checkInTime,
     required this.scheduledTime,
     required this.visitTypeEn,
@@ -35,6 +36,7 @@ class ClinicQueuePatient extends Equatable {
   final String genderEn;
   final String genderAr;
   final int queueNumber;
+  final DateTime appointmentDate;
   final String checkInTime;
   final String scheduledTime;
   final String visitTypeEn;
@@ -50,6 +52,7 @@ class ClinicQueuePatient extends Equatable {
     ClinicQueuePatientStatus? status,
     int? baseDurationMinutes,
     int? delayMinutes,
+    DateTime? appointmentDate,
   }) {
     return ClinicQueuePatient(
       id: id,
@@ -59,6 +62,7 @@ class ClinicQueuePatient extends Equatable {
       genderEn: genderEn,
       genderAr: genderAr,
       queueNumber: queueNumber,
+      appointmentDate: appointmentDate ?? this.appointmentDate,
       checkInTime: checkInTime,
       scheduledTime: scheduledTime,
       visitTypeEn: visitTypeEn,
@@ -79,6 +83,7 @@ class ClinicQueuePatient extends Equatable {
     genderEn,
     genderAr,
     queueNumber,
+    appointmentDate,
     checkInTime,
     scheduledTime,
     visitTypeEn,
@@ -135,6 +140,11 @@ class ClinicQueueState extends Equatable {
   });
 
   factory ClinicQueueState.initial() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final tomorrow = today.add(const Duration(days: 1));
+
     return const ClinicQueueState(
       trackedPatientId: 4,
       roomLabel: 'A-104',
@@ -143,6 +153,8 @@ class ClinicQueueState extends Equatable {
       specialtyEn: 'Cardiologist',
       specialtyAr: 'أخصائي قلب',
       alertSequence: 0,
+      patients: [],
+    ).copyWith(
       patients: [
         ClinicQueuePatient(
           id: 1,
@@ -152,6 +164,7 @@ class ClinicQueueState extends Equatable {
           genderEn: 'Male',
           genderAr: 'ذكر',
           queueNumber: 1,
+          appointmentDate: today,
           checkInTime: '12:45',
           scheduledTime: '13:00',
           visitTypeEn: 'Follow-up',
@@ -167,6 +180,7 @@ class ClinicQueueState extends Equatable {
           genderEn: 'Female',
           genderAr: 'أنثى',
           queueNumber: 2,
+          appointmentDate: today,
           checkInTime: '13:20',
           scheduledTime: '13:30',
           visitTypeEn: 'Consultation',
@@ -182,6 +196,7 @@ class ClinicQueueState extends Equatable {
           genderEn: 'Male',
           genderAr: 'ذكر',
           queueNumber: 3,
+          appointmentDate: today,
           checkInTime: '13:50',
           scheduledTime: '14:00',
           visitTypeEn: 'ECG Test',
@@ -197,6 +212,7 @@ class ClinicQueueState extends Equatable {
           genderEn: 'Female',
           genderAr: 'أنثى',
           queueNumber: 4,
+          appointmentDate: today,
           checkInTime: '14:00',
           scheduledTime: '14:10',
           visitTypeEn: 'Heart Checkup',
@@ -212,6 +228,7 @@ class ClinicQueueState extends Equatable {
           genderEn: 'Male',
           genderAr: 'ذكر',
           queueNumber: 5,
+          appointmentDate: today,
           checkInTime: '14:20',
           scheduledTime: '14:30',
           visitTypeEn: 'Consultation',
@@ -227,12 +244,77 @@ class ClinicQueueState extends Equatable {
           genderEn: 'Female',
           genderAr: 'أنثى',
           queueNumber: 6,
+          appointmentDate: today,
           checkInTime: '14:40',
           scheduledTime: '14:50',
           visitTypeEn: 'Follow-up',
           visitTypeAr: 'متابعة',
           status: ClinicQueuePatientStatus.waiting,
           priority: ClinicQueuePatientPriority.normal,
+        ),
+        ClinicQueuePatient(
+          id: 7,
+          nameEn: 'Ibrahim Saleh',
+          nameAr: 'إبراهيم صالح',
+          age: 50,
+          genderEn: 'Male',
+          genderAr: 'ذكر',
+          queueNumber: 1,
+          appointmentDate: yesterday,
+          checkInTime: '10:30',
+          scheduledTime: '10:40',
+          visitTypeEn: 'Consultation',
+          visitTypeAr: 'استشارة',
+          status: ClinicQueuePatientStatus.completed,
+          priority: ClinicQueuePatientPriority.normal,
+        ),
+        ClinicQueuePatient(
+          id: 8,
+          nameEn: 'Noura Ali',
+          nameAr: 'نورة علي',
+          age: 39,
+          genderEn: 'Female',
+          genderAr: 'أنثى',
+          queueNumber: 2,
+          appointmentDate: yesterday,
+          checkInTime: '11:10',
+          scheduledTime: '11:20',
+          visitTypeEn: 'Heart Checkup',
+          visitTypeAr: 'فحص قلب',
+          status: ClinicQueuePatientStatus.completed,
+          priority: ClinicQueuePatientPriority.high,
+        ),
+        ClinicQueuePatient(
+          id: 9,
+          nameEn: 'Huda Salem',
+          nameAr: 'هدى سالم',
+          age: 31,
+          genderEn: 'Female',
+          genderAr: 'أنثى',
+          queueNumber: 1,
+          appointmentDate: tomorrow,
+          checkInTime: '09:50',
+          scheduledTime: '10:00',
+          visitTypeEn: 'Follow-up',
+          visitTypeAr: 'متابعة',
+          status: ClinicQueuePatientStatus.waiting,
+          priority: ClinicQueuePatientPriority.normal,
+        ),
+        ClinicQueuePatient(
+          id: 10,
+          nameEn: 'Omar Khaled',
+          nameAr: 'عمر خالد',
+          age: 44,
+          genderEn: 'Male',
+          genderAr: 'ذكر',
+          queueNumber: 2,
+          appointmentDate: tomorrow,
+          checkInTime: '10:15',
+          scheduledTime: '10:25',
+          visitTypeEn: 'ECG Test',
+          visitTypeAr: 'تخطيط قلب',
+          status: ClinicQueuePatientStatus.waiting,
+          priority: ClinicQueuePatientPriority.high,
         ),
       ],
     );
@@ -404,11 +486,13 @@ class ClinicQueueCubit extends Cubit<ClinicQueueState> {
     required String visitTypeAr,
     required ClinicQueuePatientPriority priority,
     int baseDurationMinutes = 20,
+    DateTime? scheduledDate,
   }) {
+    final date = _normalizeDate(scheduledDate ?? DateTime.now());
     final patientId = _nextPatientId;
-    final queueNumber = _nextQueueNumber;
+    final queueNumber = _nextQueueNumberForDate(date);
     final nowMinutes = _roundUpToFive(_currentMinutes());
-    final scheduledStartMinutes = nextAvailableStartMinutes();
+    final scheduledStartMinutes = nextAvailableStartMinutes(forDate: date);
 
     final newPatient = ClinicQueuePatient(
       id: patientId,
@@ -418,6 +502,7 @@ class ClinicQueueCubit extends Cubit<ClinicQueueState> {
       genderEn: isFemale ? 'Female' : 'Male',
       genderAr: isFemale ? 'أنثى' : 'ذكر',
       queueNumber: queueNumber,
+      appointmentDate: date,
       checkInTime: _formatStorageTime(nowMinutes),
       scheduledTime: _formatStorageTime(scheduledStartMinutes),
       visitTypeEn: visitTypeEn,
@@ -434,6 +519,39 @@ class ClinicQueueCubit extends Cubit<ClinicQueueState> {
       ),
     );
   }
+
+  List<ClinicQueuePatient> patientsForDate(DateTime date) {
+    final normalizedDate = _normalizeDate(date);
+    return state.orderedPatients
+        .where(
+          (patient) => _isSameDate(patient.appointmentDate, normalizedDate),
+        )
+        .toList(growable: false);
+  }
+
+  int waitingCountForDate(DateTime date) {
+    return patientsForDate(date)
+        .where((patient) => patient.status == ClinicQueuePatientStatus.waiting)
+        .length;
+  }
+
+  int activeCountForDate(DateTime date) {
+    return patientsForDate(date)
+        .where(
+          (patient) => patient.status == ClinicQueuePatientStatus.inProgress,
+        )
+        .length;
+  }
+
+  int completedCountForDate(DateTime date) {
+    return patientsForDate(date)
+        .where(
+          (patient) => patient.status == ClinicQueuePatientStatus.completed,
+        )
+        .length;
+  }
+
+  int totalPatientsForDate(DateTime date) => patientsForDate(date).length;
 
   void addDelayToActivePatient({int minutes = 10}) {
     final activePatient = state.activePatient;
@@ -579,8 +697,10 @@ class ClinicQueueCubit extends Cubit<ClinicQueueState> {
 
   int get totalPatients => state.patients.length;
 
-  int nextAvailableStartMinutes() {
-    final orderedPatients = state.orderedPatients;
+  int nextAvailableStartMinutes({DateTime? forDate}) {
+    final orderedPatients = forDate == null
+        ? state.orderedPatients
+        : patientsForDate(forDate);
     if (orderedPatients.isEmpty) {
       return _roundUpToFive(_currentMinutes());
     }
@@ -618,14 +738,24 @@ class ClinicQueueCubit extends Cubit<ClinicQueueState> {
     return maxId + 1;
   }
 
-  int get _nextQueueNumber {
+  int _nextQueueNumberForDate(DateTime date) {
+    final normalizedDate = _normalizeDate(date);
     var maxQueueNumber = 0;
     for (final patient in state.patients) {
-      if (patient.queueNumber > maxQueueNumber) {
+      if (_isSameDate(patient.appointmentDate, normalizedDate) &&
+          patient.queueNumber > maxQueueNumber) {
         maxQueueNumber = patient.queueNumber;
       }
     }
     return maxQueueNumber + 1;
+  }
+
+  DateTime _normalizeDate(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
+  }
+
+  bool _isSameDate(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   int _currentMinutes() {

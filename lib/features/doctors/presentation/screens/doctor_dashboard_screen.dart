@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/di/injection_container.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../auth/data/auth_models.dart';
+import '../../../auth/logic/auth_cubit.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
+import '../../../auth/presentation/screens/workspace_selection_screen.dart';
 import 'clinic_queue_manager_screen.dart';
 import 'consultation_view_screen.dart';
+import 'medical_records_screen.dart';
 import 'schedule_manager_screen.dart';
 
 class DoctorDashboardScreen extends StatefulWidget {
@@ -19,6 +24,24 @@ class DoctorDashboardScreen extends StatefulWidget {
 
 class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
   int _currentIndex = 0;
+  late final SharedPreferences _prefs;
+  late final String _doctorName;
+  late final String? _currentInstitutionName;
+  late final List<InstitutionModel> _savedInstitutions;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefs = sl<SharedPreferences>();
+    _doctorName =
+        _prefs.getString(AuthCubit.userNameStorageKey) ?? 'د. أحمد محمد';
+    _currentInstitutionName = _prefs.getString(
+      AuthCubit.institutionNameStorageKey,
+    );
+    _savedInstitutions = InstitutionModel.fromStoredJson(
+      _prefs.getString(AuthCubit.institutionsStorageKey),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +126,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'د. أحمد محمد',
+                  _doctorName,
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -112,13 +135,43 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'طب القلب',
+                  context.locText(en: 'Cardiology', ar: 'طب القلب'),
                   style: TextStyle(
                     fontSize: 16,
                     color: AppColors.textSecondary,
                   ),
                 ),
+                if (_currentInstitutionName != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      _currentInstitutionName,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 32),
+                if (_savedInstitutions.length > 1)
+                  _buildProfileOption(
+                    icon: Icons.swap_horiz_rounded,
+                    title: context.locText(
+                      en: 'Switch Clinic',
+                      ar: 'تبديل العيادة',
+                    ),
+                    onTap: _openWorkspaceSelection,
+                  ),
                 // Profile Options
                 _buildProfileOption(
                   icon: Icons.edit,
@@ -180,6 +233,18 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
         color: AppColors.textSecondary,
       ),
       onTap: onTap,
+    );
+  }
+
+  void _openWorkspaceSelection() {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => WorkspaceSelectionScreen(
+          institutions: _savedInstitutions,
+          isSwitching: true,
+        ),
+      ),
     );
   }
 
@@ -283,8 +348,8 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                 const SizedBox(height: 16),
                 Text(
                   context.locText(
-                    en: 'Good Morning,\nDr. Hassan!',
-                    ar: 'صباح الخير،\nد. حسن!',
+                    en: 'Good Morning,\n$_doctorName',
+                    ar: 'صباح الخير،\n$_doctorName',
                   ),
                   style: TextStyle(
                     fontSize: 26,
@@ -295,10 +360,15 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  context.locText(
-                    en: 'You have 8 appointments today.\nYour clinic queue is active.',
-                    ar: 'لديك 8 مواعيد اليوم.\nطابور العيادة لديك نشط الآن.',
-                  ),
+                  _currentInstitutionName != null
+                      ? context.locText(
+                          en: 'Active workspace: $_currentInstitutionName\nYour clinic queue is active.',
+                          ar: 'مساحة العمل الحالية: $_currentInstitutionName\nطابور العيادة لديك نشط الآن.',
+                        )
+                      : context.locText(
+                          en: 'You have 8 appointments today.\nYour clinic queue is active.',
+                          ar: 'لديك 8 مواعيد اليوم.\nطابور العيادة لديك نشط الآن.',
+                        ),
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.white.withValues(alpha: 0.8),
@@ -510,7 +580,14 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                 ),
                 Icons.folder_open,
                 AppColors.warning,
-                () {},
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => const MedicalRecordsScreen(),
+                    ),
+                  );
+                },
               ),
             ),
           ],
@@ -732,7 +809,14 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const MedicalRecordsScreen(),
+                      ),
+                    );
+                  },
                   child: Text(
                     context.locText(en: 'View Records', ar: 'عرض السجل'),
                   ),

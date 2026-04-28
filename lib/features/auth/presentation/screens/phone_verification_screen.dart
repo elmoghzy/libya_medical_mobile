@@ -9,6 +9,7 @@ import '../../data/auth_models.dart';
 import '../../logic/auth_cubit.dart';
 import '../../logic/auth_state.dart';
 import 'onboarding_screen.dart';
+import 'workspace_selection_screen.dart';
 
 class PhoneVerificationScreen extends StatefulWidget {
   const PhoneVerificationScreen({super.key, required this.onboardingData});
@@ -131,8 +132,8 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen>
       Navigator.pushAndRemoveUntil(
         context,
         PageRouteBuilder(
-          pageBuilder: (_, __, ___) => screen,
-          transitionsBuilder: (_, animation, __, child) {
+          pageBuilder: (_, _, _) => screen,
+          transitionsBuilder: (_, animation, _, child) {
             return FadeTransition(
               opacity: animation,
               child: ScaleTransition(
@@ -150,6 +151,22 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen>
     });
   }
 
+  void _handleAuthSuccess(AuthSuccess state) {
+    if (state.requiresWorkspaceSelection) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute<void>(
+          builder: (_) =>
+              WorkspaceSelectionScreen(institutions: state.institutions),
+        ),
+        (route) => false,
+      );
+      return;
+    }
+
+    _navigateToDashboard(state.role);
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthCubit, AuthState>(
@@ -161,7 +178,7 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen>
           });
           _startResendTimer();
         } else if (state is AuthSuccess) {
-          _navigateToDashboard(state.role);
+          _handleAuthSuccess(state);
         } else if (state is AuthError) {
           _shakeController.forward().then((_) => _shakeController.reset());
           ScaffoldMessenger.of(context).showSnackBar(

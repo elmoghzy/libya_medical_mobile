@@ -117,7 +117,7 @@ class DoctorDetailsCubit extends Cubit<DoctorDetailsState> {
           selectedDate: date,
         ),
       );
-    } on DoctorsException catch (e) {
+    } on DoctorsException {
       // On error, keep doctor data but show empty slots
       emit(
         DoctorDetailsLoaded(
@@ -127,7 +127,7 @@ class DoctorDetailsCubit extends Cubit<DoctorDetailsState> {
         ),
       );
       // Optionally, you could emit an error state here
-    } catch (e) {
+    } catch (_) {
       emit(
         DoctorDetailsLoaded(
           doctor: doctor,

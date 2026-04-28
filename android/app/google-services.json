@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1020371140475",
+    "project_id": "medical-baf76",
+    "storage_bucket": "medical-baf76.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1020371140475:android:ce17b0b10d9a9ea33487de",
+        "android_client_info": {
+          "package_name": "com.example.libya_medical_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZO3csqSYkWbU4vzxMR9qdqtrYV5Epc4E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

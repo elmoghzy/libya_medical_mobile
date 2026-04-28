@@ -12,9 +12,11 @@ class ApiConstants {
 
   // Auth Endpoints
   static const String verifyPhone = '/auth/verify-phone';
+  static const String checkDoctorPhone = '/auth/check-doctor-phone';
   static const String register = '/auth/register';
   static const String login = '/auth/login';
   static const String logout = '/auth/logout';
+  static const String setActiveWorkspace = '/auth/set-active-workspace';
 
   // Doctors Endpoints
   static const String doctors = '/doctors';

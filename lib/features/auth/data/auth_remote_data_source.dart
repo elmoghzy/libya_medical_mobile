@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:dio/dio.dart';
 
+import '../../../core/network/api_constants.dart';
 import '../../../core/network/dio_client.dart';
 import 'auth_models.dart';
 
@@ -35,6 +36,9 @@ abstract class IAuthRemoteDataSource {
     String firebaseUid,
   );
 
+  /// Persists the active workspace on the backend
+  Future<void> setActiveWorkspace(int institutionId);
+
   /// Signs out the user
   Future<void> signOut();
 }
@@ -43,10 +47,14 @@ abstract class IAuthRemoteDataSource {
 /// Handles Firebase Phone Authentication and Laravel backend integration
 class AuthRemoteDataSource implements IAuthRemoteDataSource {
   AuthRemoteDataSource({DioClient? dioClient})
-      : _dioClient = dioClient ?? DioClient.instance;
+    : _dioClient = dioClient ?? DioClient.instance;
+
+  static const String _doctorNotWhitelistedMessage =
+      'عذراً، رقمك غير مسجل في النظام. يرجى مراجعة إدارة العيادة.';
+  static const String _doctorNotWhitelistedCode = 'doctor-not-whitelisted';
 
   final DioClient _dioClient;
-  
+
   // Lazy-initialized FirebaseAuth (only when Firebase is available)
   FirebaseAuth? _firebaseAuth;
   FirebaseAuth get firebaseAuth {
@@ -69,6 +77,8 @@ class AuthRemoteDataSource implements IAuthRemoteDataSource {
   /// Returns the verificationId needed for OTP verification
   @override
   Future<String> sendOtp(String phoneNumber) async {
+    await _ensureDoctorPhoneIsWhitelisted(phoneNumber);
+
     // Check if Firebase is available (not on Linux/Windows desktop)
     if (!_isFirebaseAvailable()) {
       throw const AuthException(
@@ -104,6 +114,45 @@ class AuthRemoteDataSource implements IAuthRemoteDataSource {
     } catch (e) {
       if (e is AuthException) rethrow;
       throw AuthException('Failed to send OTP: ${e.toString()}');
+    }
+  }
+
+  Future<void> _ensureDoctorPhoneIsWhitelisted(String phoneNumber) async {
+    try {
+      final response = await _dioClient.client.post<Map<String, dynamic>>(
+        ApiConstants.checkDoctorPhone,
+        data: {'phone': _formatPhoneNumberForApi(phoneNumber)},
+      );
+
+      final data = response.data;
+      if (data == null) {
+        throw const AuthException(
+          'Invalid response from server',
+          code: 'invalid-response',
+        );
+      }
+
+      if (data['success'] != true) {
+        throw const AuthException(
+          _doctorNotWhitelistedMessage,
+          code: _doctorNotWhitelistedCode,
+        );
+      }
+    } on DioException catch (e) {
+      final responseData = e.response?.data;
+      final statusCode = e.response?.statusCode;
+      final success = responseData is Map<String, dynamic>
+          ? responseData['success'] == true
+          : null;
+
+      if (statusCode == 403 || success == false) {
+        throw const AuthException(
+          _doctorNotWhitelistedMessage,
+          code: _doctorNotWhitelistedCode,
+        );
+      }
+
+      throw _mapDioException(e);
     }
   }
 
@@ -155,7 +204,7 @@ class AuthRemoteDataSource implements IAuthRemoteDataSource {
 
   /// Authenticates with Laravel backend
   /// Sends phone number and Firebase UID to get Sanctum token
-  /// 
+  ///
   /// API Response format (flat JSON):
   /// {
   ///   "token": "1|example_plain_text_token",
@@ -169,7 +218,7 @@ class AuthRemoteDataSource implements IAuthRemoteDataSource {
   ) async {
     try {
       final response = await _dioClient.client.post<Map<String, dynamic>>(
-        '/auth/verify-phone',
+        ApiConstants.verifyPhone,
         data: {
           'phone': _formatPhoneNumberForApi(phoneNumber),
           'firebase_uid': firebaseUid,
@@ -206,6 +255,21 @@ class AuthRemoteDataSource implements IAuthRemoteDataSource {
     } catch (e) {
       if (e is AuthException) rethrow;
       throw AuthException('Backend authentication failed: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> setActiveWorkspace(int institutionId) async {
+    try {
+      await _dioClient.client.post<void>(
+        ApiConstants.setActiveWorkspace,
+        data: {'institution_id': institutionId},
+      );
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      throw AuthException('Failed to set active workspace: ${e.toString()}');
     }
   }
 
@@ -331,7 +395,7 @@ class AuthRemoteDataSource implements IAuthRemoteDataSource {
 
         if (data is Map<String, dynamic>) {
           message = data['message'] as String? ?? message;
-          
+
           // Handle validation errors (422)
           if (statusCode == 422 && data['errors'] != null) {
             final errors = data['errors'] as Map<String, dynamic>;

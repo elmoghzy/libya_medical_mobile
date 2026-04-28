@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_constants.dart';
+import '../storage/shared_preferences_helper.dart';
 
 class DioClient {
   DioClient._internal() {
@@ -22,10 +23,16 @@ class DioClient {
       QueuedInterceptorsWrapper(
         onRequest: (options, handler) async {
           final prefs = await SharedPreferences.getInstance();
+          final prefsHelper = SharedPreferencesHelper(prefs);
           final token = prefs.getString(ApiConstants.accessTokenKey);
 
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
+          }
+
+          final institutionId = prefsHelper.getLastInstitutionId();
+          if (institutionId != null) {
+            options.headers['X-Institution-ID'] = institutionId.toString();
           }
 
           handler.next(options);

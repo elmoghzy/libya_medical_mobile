@@ -12,6 +12,7 @@ import '../../data/auth_models.dart';
 import '../../../home/presentation/screens/patient_dashboard_screen.dart';
 import '../../../doctors/presentation/screens/doctor_dashboard_screen.dart';
 import 'profile_setup_screen.dart';
+import 'workspace_selection_screen.dart';
 
 class OtpScreen extends StatefulWidget {
   const OtpScreen({
@@ -141,6 +142,22 @@ class _OtpScreenState extends State<OtpScreen> {
     }
   }
 
+  void _handleAuthSuccess(AuthSuccess state) {
+    if (state.requiresWorkspaceSelection) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute<void>(
+          builder: (_) =>
+              WorkspaceSelectionScreen(institutions: state.institutions),
+        ),
+        (route) => false,
+      );
+      return;
+    }
+
+    _navigateBasedOnRole(state.role, isNewUser: state.isNewUser);
+  }
+
   String _formatPhoneNumber(String phone) {
     // Simple formatting for display
     if (phone.startsWith('+218')) {
@@ -154,7 +171,7 @@ class _OtpScreenState extends State<OtpScreen> {
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess) {
-          _navigateBasedOnRole(state.role, isNewUser: state.isNewUser);
+          _handleAuthSuccess(state);
         } else if (state is OtpSent) {
           // OTP resent - update verification ID if needed
           ScaffoldMessenger.of(context).showSnackBar(
@@ -221,10 +238,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   const SizedBox(height: 24),
                   // Header
                   Text(
-                    context.locText(
-                      en: 'Verify Phone',
-                      ar: 'تأكيد الهاتف',
-                    ),
+                    context.locText(en: 'Verify Phone', ar: 'تأكيد الهاتف'),
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w700,
@@ -354,12 +368,7 @@ class _OtpScreenState extends State<OtpScreen> {
                           : Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
-                                  context.locText(
-                                    en: 'Verify',
-                                    ar: 'تحقق',
-                                  ),
-                                ),
+                                Text(context.locText(en: 'Verify', ar: 'تحقق')),
                                 SizedBox(width: 8),
                                 Icon(Icons.check, size: 18),
                               ],
@@ -402,7 +411,7 @@ class _OtpScreenState extends State<OtpScreen> {
                               Text(
                                 context.locText(
                                   en: 'Resend in ${_resendSeconds}s',
-                                  ar: 'إعادة الإرسال خلال ${_resendSeconds}ث',
+                                  ar: 'إعادة الإرسال خلال $_resendSeconds ث',
                                 ),
                                 style: TextStyle(
                                   fontSize: 14,

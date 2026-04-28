@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -9,9 +10,16 @@ import 'core/theme/app_theme.dart';
 import 'core/di/injection_container.dart' as di;
 import 'core/localization/app_localizations.dart';
 import 'core/localization/locale_cubit.dart';
+import 'core/services/push_notification_service.dart';
+import 'firebase_options.dart';
 import 'features/auth/logic/auth_cubit.dart';
 import 'features/auth/presentation/screens/splash_screen.dart';
 import 'features/queue/logic/clinic_queue_cubit.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +28,12 @@ Future<void> main() async {
   try {
     // Firebase only works on Android, iOS, Web, macOS
     if (kIsWeb || Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
-      await Firebase.initializeApp();
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler,
+      );
     } else {
       // On Linux/Windows Desktop: Skip Firebase (use Dev Mode instead)
       debugPrint(
@@ -33,6 +46,7 @@ Future<void> main() async {
 
   // Initialize dependencies
   await di.initDependencies();
+  await di.sl<PushNotificationService>().initialize();
 
   runApp(const MyApp());
 }

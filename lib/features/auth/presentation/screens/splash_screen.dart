@@ -4,10 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/storage/shared_preferences_helper.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../data/auth_models.dart';
+import '../../logic/auth_cubit.dart';
 import '../../../home/presentation/screens/patient_dashboard_screen.dart';
 import '../../../doctors/presentation/screens/doctor_dashboard_screen.dart';
 import 'onboarding_screen.dart';
+import 'workspace_selection_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -42,32 +46,99 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Check if user is already logged in
     final prefs = await SharedPreferences.getInstance();
+    final prefsHelper = SharedPreferencesHelper(prefs);
     final token = prefs.getString('access_token');
     final roleStr = prefs.getString('user_role');
+    final savedInstitutions = InstitutionModel.fromStoredJson(
+      prefs.getString('user_institutions'),
+    );
 
     if (!mounted) return;
 
     Widget destination;
     if (token != null && roleStr != null) {
       // User is logged in - go to dashboard
-      destination = roleStr == 'patient'
-          ? const PatientDashboardScreen()
-          : const DoctorDashboardScreen();
+      if (roleStr == 'patient') {
+        destination = const PatientDashboardScreen();
+      } else {
+        destination = await _resolveDoctorDestination(
+          prefs,
+          prefsHelper,
+          savedInstitutions,
+        );
+      }
     } else {
       // New user - go to onboarding
       destination = const OnboardingScreen();
     }
 
+    if (!mounted) return;
+
     Navigator.pushReplacement(
       context,
       PageRouteBuilder<void>(
-        pageBuilder: (_, __, ___) => destination,
-        transitionsBuilder: (_, animation, __, child) {
+        pageBuilder: (_, _, _) => destination,
+        transitionsBuilder: (_, animation, _, child) {
           return FadeTransition(opacity: animation, child: child);
         },
         transitionDuration: const Duration(milliseconds: 500),
       ),
     );
+  }
+
+  Future<Widget> _resolveDoctorDestination(
+    SharedPreferences prefs,
+    SharedPreferencesHelper prefsHelper,
+    List<InstitutionModel> savedInstitutions,
+  ) async {
+    if (savedInstitutions.isEmpty) {
+      await _clearSavedWorkspaceSelection(prefs, prefsHelper);
+      return const DoctorDashboardScreen();
+    }
+
+    if (savedInstitutions.length == 1) {
+      await _saveWorkspaceSelection(
+        prefs,
+        prefsHelper,
+        savedInstitutions.first,
+      );
+      return const DoctorDashboardScreen();
+    }
+
+    final lastInstitutionId = prefsHelper.getLastInstitutionId();
+    if (lastInstitutionId != null) {
+      for (final institution in savedInstitutions) {
+        if (institution.id == lastInstitutionId) {
+          await _saveWorkspaceSelection(prefs, prefsHelper, institution);
+          return const DoctorDashboardScreen();
+        }
+      }
+    }
+
+    await _clearSavedWorkspaceSelection(prefs, prefsHelper);
+    return WorkspaceSelectionScreen(institutions: savedInstitutions);
+  }
+
+  Future<void> _saveWorkspaceSelection(
+    SharedPreferences prefs,
+    SharedPreferencesHelper prefsHelper,
+    InstitutionModel institution,
+  ) async {
+    await prefs.setInt(AuthCubit.institutionIdStorageKey, institution.id);
+    await prefs.setString(
+      AuthCubit.institutionNameStorageKey,
+      institution.name,
+    );
+    await prefsHelper.saveLastInstitutionId(institution.id);
+  }
+
+  Future<void> _clearSavedWorkspaceSelection(
+    SharedPreferences prefs,
+    SharedPreferencesHelper prefsHelper,
+  ) async {
+    await prefs.remove(AuthCubit.institutionIdStorageKey);
+    await prefs.remove(AuthCubit.institutionNameStorageKey);
+    await prefsHelper.clearLastInstitutionId();
   }
 
   @override

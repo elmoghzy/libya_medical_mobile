@@ -71,7 +71,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
   Widget _buildHomeTab() {
     return Column(
       children: [
-        AppTopBar(onNotificationTap: _openQueueTracker),
+        const AppTopBar(),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20),

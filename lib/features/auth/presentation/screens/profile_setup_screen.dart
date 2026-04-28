@@ -81,7 +81,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        context.locText(en: 'Libya Medical', ar: 'ليبيا الطبية'),
+                        context.locText(
+                          en: 'Libya Medical',
+                          ar: 'ليبيا الطبية',
+                        ),
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
@@ -141,8 +144,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   const SizedBox(height: 12),
                   Text(
                     context.locText(
-                      en:
-                          'Help us personalize your medical journey with accurate details.',
+                      en: 'Help us personalize your medical journey with accurate details.',
                       ar: 'ساعدنا في تخصيص تجربتك الصحية بإدخال بيانات دقيقة.',
                     ),
                     style: TextStyle(
@@ -238,10 +240,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     context.locText(
-                                      en:
-                                          'Clear facial photos help build trust with colleagues and patients.',
-                                      ar:
-                                          'الصورة الواضحة تساعد على بناء الثقة مع الزملاء والمرضى.',
+                                      en: 'Clear facial photos help build trust with colleagues and patients.',
+                                      ar: 'الصورة الواضحة تساعد على بناء الثقة مع الزملاء والمرضى.',
                                     ),
                                     style: TextStyle(
                                       fontSize: 13,
@@ -259,10 +259,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         const SizedBox(height: 32),
                         // Full name
                         Text(
-                          context.locText(
-                            en: 'Full Name',
-                            ar: 'الاسم الكامل',
-                          ),
+                          context.locText(en: 'Full Name', ar: 'الاسم الكامل'),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -343,7 +340,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                           ),
                           const SizedBox(height: 8),
                           DropdownButtonFormField<String>(
-                            value: _selectedSpecialty,
+                            initialValue: _selectedSpecialty,
                             hint: Text(
                               context.locText(
                                 en: 'Select your field',
@@ -370,10 +367,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                             Expanded(
                               child: Text(
                                 context.locText(
-                                  en:
-                                      'You can update these details later in Settings.',
-                                  ar:
-                                      'يمكنك تعديل هذه البيانات لاحقًا من الإعدادات.',
+                                  en: 'You can update these details later in Settings.',
+                                  ar: 'يمكنك تعديل هذه البيانات لاحقًا من الإعدادات.',
                                 ),
                                 style: TextStyle(
                                   fontSize: 12,
@@ -453,10 +448,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                                     const SizedBox(height: 2),
                                     Text(
                                       context.locText(
-                                        en:
-                                            'Join 500+ licensed Libyan medical professionals.',
-                                        ar:
-                                            'انضم إلى أكثر من 500 مختص طبي ليبي مرخّص.',
+                                        en: 'Join 500+ licensed Libyan medical professionals.',
+                                        ar: 'انضم إلى أكثر من 500 مختص طبي ليبي مرخّص.',
                                       ),
                                       style: TextStyle(
                                         fontSize: 11,

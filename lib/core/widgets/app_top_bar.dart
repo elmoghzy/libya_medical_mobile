@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../localization/app_localizations.dart';
 import '../localization/locale_cubit.dart';
 import '../theme/app_colors.dart';
+import 'notifications_screen.dart';
 
 class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
   const AppTopBar({
@@ -125,11 +126,19 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
                   Icons.notifications_outlined,
                   color: AppColors.textSecondary,
                 ),
-                onPressed: onNotificationTap,
+                onPressed:
+                    onNotificationTap ?? () => _openNotifications(context),
               ),
           ],
         ),
       ),
+    );
+  }
+
+  void _openNotifications(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(builder: (_) => const NotificationsScreen()),
     );
   }
 }

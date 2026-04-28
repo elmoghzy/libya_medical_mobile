@@ -113,9 +113,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     Navigator.push(
       context,
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) =>
+        pageBuilder: (_, _, _) =>
             PhoneVerificationScreen(onboardingData: _data),
-        transitionsBuilder: (_, animation, __, child) {
+        transitionsBuilder: (_, animation, _, child) {
           return SlideTransition(
             position:
                 Tween<Offset>(
@@ -227,108 +227,111 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
             child: Column(
               children: [
-            // Animated Logo/Icon
-            TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.0, end: 1.0),
-              duration: const Duration(milliseconds: 800),
-              curve: Curves.elasticOut,
-              builder: (context, value, child) {
-                return Transform.scale(
-                  scale: value,
-                  child: Container(
-                    width: 140,
-                    height: 140,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppColors.primary, AppColors.primaryContainer],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                // Animated Logo/Icon
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: const Duration(milliseconds: 800),
+                  curve: Curves.elasticOut,
+                  builder: (context, value, child) {
+                    return Transform.scale(
+                      scale: value,
+                      child: Container(
+                        width: 140,
+                        height: 140,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.primary,
+                              AppColors.primaryContainer,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.3),
+                              blurRadius: 30,
+                              offset: const Offset(0, 15),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.local_hospital_rounded,
+                          size: 70,
+                          color: Colors.white,
+                        ),
                       ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.3),
-                          blurRadius: 30,
-                          offset: const Offset(0, 15),
+                    );
+                  },
+                ),
+                const SizedBox(height: 48),
+
+                // Welcome text with animation
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: const Duration(milliseconds: 600),
+                  curve: Curves.easeOut,
+                  builder: (context, value, _) {
+                    return Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(0, 20 * (1 - value)),
+                        child: Column(
+                          children: [
+                            Text(
+                              'مرحباً بك في',
+                              style: TextStyle(
+                                fontSize: 20,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Libya Medical',
+                              style: TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.local_hospital_rounded,
-                      size: 70,
-                      color: Colors.white,
-                    ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 24),
+
+                Text(
+                  'صحتك أولويتنا\nاحجز موعدك مع أفضل الأطباء في ليبيا',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppColors.textSecondary,
+                    height: 1.6,
                   ),
-                );
-              },
-            ),
-            const SizedBox(height: 48),
+                ),
+                const SizedBox(height: 64),
 
-            // Welcome text with animation
-            TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.0, end: 1.0),
-              duration: const Duration(milliseconds: 600),
-              curve: Curves.easeOut,
-              builder: (context, value, _) {
-                return Opacity(
-                  opacity: value,
-                  child: Transform.translate(
-                    offset: Offset(0, 20 * (1 - value)),
-                    child: Column(
-                      children: [
-                        Text(
-                          'مرحباً بك في',
-                          style: TextStyle(
-                            fontSize: 20,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Libya Medical',
-                          style: TextStyle(
-                            fontSize: 36,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-
-            Text(
-              'صحتك أولويتنا\nاحجز موعدك مع أفضل الأطباء في ليبيا',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textSecondary,
-                height: 1.6,
-              ),
-            ),
-            const SizedBox(height: 64),
-
-            // Features showcase
-            _buildFeatureItem(
-              icon: Icons.calendar_today_rounded,
-              title: 'حجز سهل',
-              delay: 200,
-            ),
-            const SizedBox(height: 16),
-            _buildFeatureItem(
-              icon: Icons.verified_rounded,
-              title: 'أطباء معتمدين',
-              delay: 400,
-            ),
-            const SizedBox(height: 16),
-            _buildFeatureItem(
-              icon: Icons.access_time_rounded,
-              title: 'متابعة مواعيدك',
-              delay: 600,
-            ),
+                // Features showcase
+                _buildFeatureItem(
+                  icon: Icons.calendar_today_rounded,
+                  title: 'حجز سهل',
+                  delay: 200,
+                ),
+                const SizedBox(height: 16),
+                _buildFeatureItem(
+                  icon: Icons.verified_rounded,
+                  title: 'أطباء معتمدين',
+                  delay: 400,
+                ),
+                const SizedBox(height: 16),
+                _buildFeatureItem(
+                  icon: Icons.access_time_rounded,
+                  title: 'متابعة مواعيدك',
+                  delay: 600,
+                ),
 
                 const SizedBox(height: 32),
                 // Start button
@@ -407,40 +410,43 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-            const SizedBox(height: 20),
-            Text(
-              'أهلاً بك! 👋',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'كيف تريد استخدام التطبيق؟',
-              style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 48),
+                const SizedBox(height: 20),
+                Text(
+                  'أهلاً بك! 👋',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'كيف تريد استخدام التطبيق؟',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 48),
 
-            // Patient card
-            _buildRoleCard(
-              role: 'patient',
-              icon: Icons.person_rounded,
-              title: 'مريض',
-              description: 'ابحث عن أطباء واحجز مواعيد',
-              gradient: [AppColors.primary, AppColors.primaryContainer],
-            ),
-            const SizedBox(height: 20),
+                // Patient card
+                _buildRoleCard(
+                  role: 'patient',
+                  icon: Icons.person_rounded,
+                  title: 'مريض',
+                  description: 'ابحث عن أطباء واحجز مواعيد',
+                  gradient: [AppColors.primary, AppColors.primaryContainer],
+                ),
+                const SizedBox(height: 20),
 
-            // Doctor card
-            _buildRoleCard(
-              role: 'doctor',
-              icon: Icons.medical_services_rounded,
-              title: 'طبيب',
-              description: 'أدر عيادتك واستقبل المرضى',
-              gradient: [AppColors.secondary, AppColors.secondaryContainer],
-            ),
+                // Doctor card
+                _buildRoleCard(
+                  role: 'doctor',
+                  icon: Icons.medical_services_rounded,
+                  title: 'طبيب',
+                  description: 'أدر عيادتك واستقبل المرضى',
+                  gradient: [AppColors.secondary, AppColors.secondaryContainer],
+                ),
 
                 const SizedBox(height: 32),
                 if (_data.role != null)

@@ -15,8 +15,7 @@ class ScheduleManagerScreen extends StatefulWidget {
 
 class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
   int _selectedDay = 3; // Thursday
-  final List<int> _dates = [21, 22, 23, 24, 25, 26, 27];
-  final DateTime _weekStart = DateTime(2024, 10, 21);
+  DateTime _weekStart = DateTime(2024, 10, 21);
 
   final Map<int, List<Map<String, dynamic>>> _schedule = {
     0: [], // Monday
@@ -91,6 +90,16 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
         ),
       ),
     );
+  }
+
+  void _changeWeek(int offset) {
+    setState(() {
+      _weekStart = _weekStart.add(Duration(days: offset * 7));
+    });
+  }
+
+  DateTime _dateForIndex(int index) {
+    return _weekStart.add(Duration(days: index));
   }
 
   Widget _buildHeader() {
@@ -173,7 +182,7 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            onPressed: () {},
+            onPressed: () => _changeWeek(-1),
             icon: const Icon(Icons.chevron_left),
             color: AppColors.textSecondary,
           ),
@@ -198,7 +207,7 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
             ],
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: () => _changeWeek(1),
             icon: const Icon(Icons.chevron_right),
             color: AppColors.textSecondary,
           ),
@@ -252,7 +261,7 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '${_dates[index]}',
+                      '${_dateForIndex(index).day}',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -998,31 +1007,65 @@ class _ScheduleManagerScreenState extends State<ScheduleManagerScreen> {
         ];
 
   String _getMonthYearLabel(AppLocalizations l10n) {
-    final month = _getMonthLongLabels(l10n)[_weekStart.month - 1];
-    return '$month ${_weekStart.year}';
+    final weekEnd = _weekStart.add(const Duration(days: 6));
+    final startMonth = _getMonthLongLabels(l10n)[_weekStart.month - 1];
+    final endMonth = _getMonthLongLabels(l10n)[weekEnd.month - 1];
+
+    if (_weekStart.year == weekEnd.year && _weekStart.month == weekEnd.month) {
+      return '$startMonth ${_weekStart.year}';
+    }
+
+    if (_weekStart.year == weekEnd.year) {
+      return '$startMonth / $endMonth ${_weekStart.year}';
+    }
+
+    return '$startMonth ${_weekStart.year} / $endMonth ${weekEnd.year}';
   }
 
   String _getWeekRangeLabel(AppLocalizations l10n) {
     final startMonth = _getMonthShortLabels(l10n)[_weekStart.month - 1];
     final weekEnd = _weekStart.add(const Duration(days: 6));
+    final endMonth = _getMonthShortLabels(l10n)[weekEnd.month - 1];
+    final weekNumber = _getIsoWeekNumber(_weekStart);
 
-    if (l10n.isArabic) {
-      return '${l10n.tr('week')} 43 • ${_weekStart.day} $startMonth - ${weekEnd.day} $startMonth';
+    if (_weekStart.month == weekEnd.month) {
+      if (l10n.isArabic) {
+        return '${l10n.tr('week')} $weekNumber • ${_weekStart.day} $startMonth - ${weekEnd.day} $startMonth';
+      }
+
+      return '${l10n.tr('week')} $weekNumber • $startMonth ${_weekStart.day} - $startMonth ${weekEnd.day}';
     }
 
-    return '${l10n.tr('week')} 43 • $startMonth ${_weekStart.day} - $startMonth ${weekEnd.day}';
+    if (l10n.isArabic) {
+      return '${l10n.tr('week')} $weekNumber • ${_weekStart.day} $startMonth - ${weekEnd.day} $endMonth';
+    }
+
+    return '${l10n.tr('week')} $weekNumber • $startMonth ${_weekStart.day} - $endMonth ${weekEnd.day}';
   }
 
   String _getSelectedDateLabel(AppLocalizations l10n) {
     final weekday = _getWeekdayLongLabels(l10n)[_selectedDay];
-    final month = _getMonthShortLabels(l10n)[_weekStart.month - 1];
-    final date = _dates[_selectedDay];
+    final selectedDate = _dateForIndex(_selectedDay);
+    final month = _getMonthShortLabels(l10n)[selectedDate.month - 1];
+    final date = selectedDate.day;
 
     if (l10n.isArabic) {
       return '$weekday، $date $month';
     }
 
     return '$weekday, $month $date';
+  }
+
+  int _getIsoWeekNumber(DateTime date) {
+    final normalized = DateTime(date.year, date.month, date.day);
+    final thursday = normalized.add(Duration(days: 4 - normalized.weekday));
+    final firstThursday = DateTime(
+      thursday.year,
+      1,
+      4,
+    ).add(Duration(days: 4 - DateTime(thursday.year, 1, 4).weekday));
+
+    return ((thursday.difference(firstThursday).inDays) / 7).floor() + 1;
   }
 
   Widget _buildTypeOption(

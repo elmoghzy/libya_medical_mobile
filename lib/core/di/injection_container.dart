@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../localization/locale_cubit.dart';
+import '../services/push_notification_service.dart';
 import '../../features/auth/data/auth_remote_data_source.dart';
 import '../../features/auth/logic/auth_cubit.dart';
 import '../../features/bookings/data/datasources/bookings_remote_data_source.dart';
@@ -9,6 +11,7 @@ import '../../features/bookings/logic/bookings_cubit.dart';
 import '../../features/doctors/data/datasources/doctors_remote_data_source.dart';
 import '../../features/doctors/logic/doctor_details_cubit.dart';
 import '../../features/doctors/logic/doctors_cubit.dart';
+import '../../features/notifications/data/notifications_remote_data_source.dart';
 import '../../features/queue/logic/clinic_queue_cubit.dart';
 
 final GetIt sl = GetIt.instance;
@@ -24,10 +27,10 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<IAuthRemoteDataSource>(() {
     try {
       return AuthRemoteDataSource();
-    } catch (e) {
-      print('Error while creating IAuthRemoteDataSource');
-      print('Stack trace:');
-      print(StackTrace.current);
+    } catch (e, stackTrace) {
+      debugPrint('Error while creating IAuthRemoteDataSource: $e');
+      debugPrint('Stack trace:');
+      debugPrint('$stackTrace');
       // Return a safe instance that won't crash
       // (sendOtp will throw a proper error when called)
       rethrow;
@@ -40,12 +43,23 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<IBookingsRemoteDataSource>(
     () => BookingsRemoteDataSource(),
   );
+  sl.registerLazySingleton<INotificationsRemoteDataSource>(
+    () => NotificationsRemoteDataSource(),
+  );
+
+  // ============ Services ============
+  sl.registerLazySingleton<PushNotificationService>(
+    () => PushNotificationService(
+      notificationsRemoteDataSource: sl<INotificationsRemoteDataSource>(),
+    ),
+  );
 
   // ============ Cubits ============
   sl.registerFactory<AuthCubit>(
     () => AuthCubit(
       authDataSource: sl<IAuthRemoteDataSource>(),
       sharedPreferences: sl<SharedPreferences>(),
+      pushNotificationService: sl<PushNotificationService>(),
     ),
   );
 

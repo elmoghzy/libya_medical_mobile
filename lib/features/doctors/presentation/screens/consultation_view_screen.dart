@@ -5,6 +5,7 @@ import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../queue/logic/clinic_queue_cubit.dart';
+import 'medical_records_screen.dart';
 
 class ConsultationViewScreen extends StatefulWidget {
   const ConsultationViewScreen({super.key, this.patientId});
@@ -21,6 +22,8 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
   final _notesController = TextEditingController();
   final _diagnosisController = TextEditingController();
   final _prescriptionController = TextEditingController();
+  final _prescriptionSearchController = TextEditingController();
+  final _labSearchController = TextEditingController();
 
   final List<String> _selectedSymptoms = ['Chest Pain', 'Shortness of Breath'];
   final List<String> _availableSymptoms = [
@@ -32,6 +35,48 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
     'Swelling',
     'Nausea',
     'Headache',
+  ];
+  final List<_PrescriptionEntry> _prescriptionItems = const [
+    _PrescriptionEntry(
+      name: 'Atorvastatin',
+      dosage: '20mg',
+      frequency: 'Once daily at night',
+      quantity: '30 tablets',
+      notes: 'For cholesterol management',
+    ),
+    _PrescriptionEntry(
+      name: 'Aspirin',
+      dosage: '81mg',
+      frequency: 'Once daily',
+      quantity: '30 tablets',
+      notes: 'Blood thinner',
+    ),
+    _PrescriptionEntry(
+      name: 'Metoprolol',
+      dosage: '25mg',
+      frequency: 'Twice daily',
+      quantity: '60 tablets',
+      notes: 'For heart rate control',
+    ),
+  ];
+  final List<_LabTestEntry> _labTestItems = const [
+    _LabTestEntry(
+      name: 'Complete Blood Count (CBC)',
+      status: 'Ordered',
+      isActive: false,
+    ),
+    _LabTestEntry(name: 'Lipid Panel', status: 'Ordered', isActive: false),
+    _LabTestEntry(
+      name: 'ECG (Electrocardiogram)',
+      status: 'In Progress',
+      isActive: true,
+    ),
+    _LabTestEntry(
+      name: 'Chest X-Ray',
+      status: 'Completed',
+      isActive: true,
+      hasResult: true,
+    ),
   ];
 
   @override
@@ -46,6 +91,8 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
     _notesController.dispose();
     _diagnosisController.dispose();
     _prescriptionController.dispose();
+    _prescriptionSearchController.dispose();
+    _labSearchController.dispose();
     super.dispose();
   }
 
@@ -250,36 +297,6 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildInfoSection(
-                    context.locText(en: 'Vitals', ar: 'العلامات الحيوية'),
-                    [
-                      _buildVitalItem(
-                        context.locText(en: 'Blood Pressure', ar: 'ضغط الدم'),
-                        '120/80',
-                        'mmHg',
-                        AppColors.tertiary,
-                      ),
-                      _buildVitalItem(
-                        context.locText(en: 'Heart Rate', ar: 'معدل النبض'),
-                        '72',
-                        'bpm',
-                        AppColors.primary,
-                      ),
-                      _buildVitalItem(
-                        context.locText(en: 'Temperature', ar: 'الحرارة'),
-                        '36.8',
-                        '°C',
-                        AppColors.warning,
-                      ),
-                      _buildVitalItem(
-                        context.locText(en: 'SpO2', ar: 'الأكسجين'),
-                        '98',
-                        '%',
-                        AppColors.success,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  _buildInfoSection(
                     context.locText(en: 'Allergies', ar: 'الحساسية'),
                     [
                       _buildChip('Penicillin', AppColors.error),
@@ -319,7 +336,15 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              MedicalRecordsScreen(patientId: widget.patientId),
+                        ),
+                      );
+                    },
                     icon: const Icon(Icons.folder_open, size: 18),
                     label: Text(context.locText(en: 'Records', ar: 'السجل')),
                   ),
@@ -591,6 +616,8 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
   }
 
   Widget _buildPrescriptionTab() {
+    final filteredPrescriptionItems = _filteredPrescriptionItems;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -607,31 +634,38 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             ),
           ),
+          const SizedBox(height: 16),
+          _buildSearchField(
+            controller: _prescriptionSearchController,
+            hintText: context.locText(
+              en: 'Search medications, dosage, or notes...',
+              ar: 'ابحث عن دواء أو جرعة أو ملاحظة...',
+            ),
+          ),
           const SizedBox(height: 24),
           // Prescription list
-          _buildPrescriptionItem(
-            'Atorvastatin',
-            '20mg',
-            'Once daily at night',
-            '30 tablets',
-            'For cholesterol management',
-          ),
-          const SizedBox(height: 12),
-          _buildPrescriptionItem(
-            'Aspirin',
-            '81mg',
-            'Once daily',
-            '30 tablets',
-            'Blood thinner',
-          ),
-          const SizedBox(height: 12),
-          _buildPrescriptionItem(
-            'Metoprolol',
-            '25mg',
-            'Twice daily',
-            '60 tablets',
-            'For heart rate control',
-          ),
+          if (filteredPrescriptionItems.isEmpty)
+            _buildEmptyFilterState(
+              message: context.locText(
+                en: 'No medications match this search.',
+                ar: 'لا توجد أدوية مطابقة لهذا البحث.',
+              ),
+            )
+          else
+            ...filteredPrescriptionItems.asMap().entries.map((entry) {
+              final item = entry.value;
+              final isLast = entry.key == filteredPrescriptionItems.length - 1;
+              return Padding(
+                padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+                child: _buildPrescriptionItem(
+                  item.name,
+                  item.dosage,
+                  item.frequency,
+                  item.quantity,
+                  item.notes,
+                ),
+              );
+            }),
           const SizedBox(height: 28),
           // Instructions
           Text(
@@ -664,6 +698,8 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
   }
 
   Widget _buildLabTestsTab() {
+    final filteredLabTestItems = _filteredLabTestItems;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -678,15 +714,37 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             ),
           ),
+          const SizedBox(height: 16),
+          _buildSearchField(
+            controller: _labSearchController,
+            hintText: context.locText(
+              en: 'Search tests or filter by status...',
+              ar: 'ابحث عن تحليل أو صفِّ حسب الحالة...',
+            ),
+          ),
           const SizedBox(height: 24),
           // Ordered tests
-          _buildLabTestItem('Complete Blood Count (CBC)', 'Ordered', false),
-          const SizedBox(height: 12),
-          _buildLabTestItem('Lipid Panel', 'Ordered', false),
-          const SizedBox(height: 12),
-          _buildLabTestItem('ECG (Electrocardiogram)', 'In Progress', true),
-          const SizedBox(height: 12),
-          _buildLabTestItem('Chest X-Ray', 'Completed', true, hasResult: true),
+          if (filteredLabTestItems.isEmpty)
+            _buildEmptyFilterState(
+              message: context.locText(
+                en: 'No lab tests match this search.',
+                ar: 'لا توجد تحاليل مطابقة لهذا البحث.',
+              ),
+            )
+          else
+            ...filteredLabTestItems.asMap().entries.map((entry) {
+              final item = entry.value;
+              final isLast = entry.key == filteredLabTestItems.length - 1;
+              return Padding(
+                padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+                child: _buildLabTestItem(
+                  item.name,
+                  item.status,
+                  item.isActive,
+                  hasResult: item.hasResult,
+                ),
+              );
+            }),
           const SizedBox(height: 28),
           // Quick order suggestions
           Text(
@@ -733,47 +791,102 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
     );
   }
 
-  Widget _buildVitalItem(String label, String value, String unit, Color color) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
+  Widget _buildSearchField({
+    required TextEditingController controller,
+    required String hintText,
+  }) {
+    return TextField(
+      controller: controller,
+      onChanged: (_) => setState(() {}),
+      decoration: InputDecoration(
+        hintText: hintText,
+        prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
+        suffixIcon: controller.text.isEmpty
+            ? null
+            : IconButton(
+                onPressed: () {
+                  controller.clear();
+                  setState(() {});
+                },
+                icon: const Icon(Icons.close, color: AppColors.textSecondary),
+              ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    );
+  }
+
+  Widget _buildEmptyFilterState({required String message}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.outlineVariant.withValues(alpha: 0.45),
+        ),
+      ),
+      child: Column(
         children: [
+          const Icon(
+            Icons.search_off_rounded,
+            size: 28,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(height: 10),
           Text(
-            label,
+            message,
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              color: AppColors.textSecondary.withValues(alpha: 0.8),
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary.withValues(alpha: 0.85),
             ),
-          ),
-          Row(
-            children: [
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: color,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                unit,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textSecondary.withValues(alpha: 0.6),
-                ),
-              ),
-            ],
           ),
         ],
       ),
     );
+  }
+
+  List<_PrescriptionEntry> get _filteredPrescriptionItems {
+    final query = _prescriptionSearchController.text.trim();
+    if (query.isEmpty) {
+      return _prescriptionItems;
+    }
+
+    return _prescriptionItems.where((item) {
+      return _matchesSearchQuery(query, [
+        item.name,
+        item.dosage,
+        item.frequency,
+        item.quantity,
+        item.notes,
+      ]);
+    }).toList();
+  }
+
+  List<_LabTestEntry> get _filteredLabTestItems {
+    final query = _labSearchController.text.trim();
+    if (query.isEmpty) {
+      return _labTestItems;
+    }
+
+    return _labTestItems.where((item) {
+      return _matchesSearchQuery(query, [item.name, item.status]);
+    }).toList();
+  }
+
+  bool _matchesSearchQuery(String query, List<String> values) {
+    final normalizedQuery = query.toLowerCase();
+
+    for (final value in values) {
+      final localizedValue = _localizedClinicalText(value).toLowerCase();
+      if (value.toLowerCase().contains(normalizedQuery) ||
+          localizedValue.contains(normalizedQuery)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   Widget _buildChip(String label, Color color) {
@@ -1293,4 +1406,34 @@ class _ConsultationViewScreenState extends State<ConsultationViewScreen>
         return value;
     }
   }
+}
+
+class _PrescriptionEntry {
+  const _PrescriptionEntry({
+    required this.name,
+    required this.dosage,
+    required this.frequency,
+    required this.quantity,
+    required this.notes,
+  });
+
+  final String name;
+  final String dosage;
+  final String frequency;
+  final String quantity;
+  final String notes;
+}
+
+class _LabTestEntry {
+  const _LabTestEntry({
+    required this.name,
+    required this.status,
+    required this.isActive,
+    this.hasResult = false,
+  });
+
+  final String name;
+  final String status;
+  final bool isActive;
+  final bool hasResult;
 }

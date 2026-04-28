@@ -43,14 +43,26 @@ final class OtpVerifying extends AuthState {
 
 /// State when authentication is successful
 final class AuthSuccess extends AuthState {
-  const AuthSuccess({required this.role, this.user, this.isNewUser = false});
+  const AuthSuccess({
+    required this.authResponse,
+    this.isNewUser = false,
+    this.requiresWorkspaceSelection = false,
+  });
 
-  final UserRole role;
-  final UserModel? user;
+  final AuthResponse authResponse;
   final bool isNewUser;
+  final bool requiresWorkspaceSelection;
+
+  UserRole get role => authResponse.role;
+  UserModel? get user => authResponse.user;
+  List<InstitutionModel> get institutions => authResponse.institutions;
 
   @override
-  List<Object?> get props => [role, user, isNewUser];
+  List<Object?> get props => [
+    authResponse,
+    isNewUser,
+    requiresWorkspaceSelection,
+  ];
 }
 
 /// State when user is already authenticated (from saved token)

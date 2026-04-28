@@ -1,645 +1,340 @@
-# Libya Medical - بنية المشروع (Project Structure) 📁
+# Libya Medical - بنية المشروع الحالية
 
-دليل تفصيلي لجميع الملفات والمجلدات في المشروع.
-
----
-
-## 📊 إحصائيات المشروع
-
-```
-Total Files: ~35 Dart files
-Lines of Code: ~11,000+ lines
-Features: 4 (Auth, Doctors, Bookings, Home)
-Screens: 14 screens
-```
+هذا الملف يصف **البنية الفعلية الحالية** للمشروع داخل الـ workspace بتاريخ `2026-04-18`.
 
 ---
 
-## 🗂️ البنية الكاملة
+## إحصائيات فعلية
 
-```
-libya_medical_mobile/
-│
-├── android/                                    # Android Native Code
-│   ├── app/
-│   │   ├── google-services.json               # Firebase Config
-│   │   └── build.gradle                       # Android Build Config
-│   └── build.gradle
-│
-├── ios/                                        # iOS Native Code
-│   ├── Runner/
-│   │   └── GoogleService-Info.plist           # Firebase Config iOS
-│   └── Podfile
-│
-├── lib/                                        # 🎯 Main Flutter Code
-│   │
-│   ├── main.dart                              # ⭐ Entry Point (Firebase Init)
-│   │
-│   ├── core/                                  # 🔧 Shared/Core Features
-│   │   │
-│   │   ├── di/                                # Dependency Injection
-│   │   │   └── injection_container.dart       # GetIt Setup
-│   │   │
-│   │   ├── network/                           # Network Layer
-│   │   │   ├── dio_client.dart                # HTTP Client Singleton
-│   │   │   └── api_constants.dart             # API URLs & Endpoints
-│   │   │
-│   │   ├── theme/                             # Design System
-│   │   │   └── app_colors.dart                # App Color Palette
-│   │   │
-│   │   └── widgets/                           # Reusable Widgets
-│   │       ├── bottom_nav_bar.dart            # Bottom Navigation
-│   │       └── app_top_bar.dart               # Top App Bar
-│   │
-│   └── features/                              # 🎨 Feature Modules
-│       │
-│       ├── auth/                              # 🔐 Authentication Feature
-│       │   │
-│       │   ├── data/                          # Data Layer
-│       │   │   ├── auth_models.dart           # Models (UserRole, AuthResponse, UserModel)
-│       │   │   └── auth_remote_data_source.dart  # Firebase + Laravel Auth
-│       │   │
-│       │   ├── logic/                         # Business Logic (BLoC)
-│       │   │   ├── auth_cubit.dart            # Auth Cubit
-│       │   │   └── auth_state.dart            # Auth States (Sealed Classes)
-│       │   │
-│       │   └── presentation/                  # UI Layer
-│       │       └── screens/
-│       │           ├── login_screen.dart      # Login with OTP
-│       │           ├── otp_screen.dart        # OTP Verification
-│       │           └── profile_setup_screen.dart  # Profile Setup
-│       │
-│       ├── doctors/                           # 👨‍⚕️ Doctors Feature
-│       │   │
-│       │   ├── data/                          # Data Layer
-│       │   │   ├── models/
-│       │   │   │   └── doctor_model.dart      # DoctorModel, ScheduleModel, AvailableSlotsModel
-│       │   │   │
-│       │   │   └── datasources/
-│       │   │       └── doctors_remote_data_source.dart  # Doctors API Calls
-│       │   │
-│       │   ├── logic/                         # Business Logic
-│       │   │   ├── doctors_cubit.dart         # Doctors List Cubit
-│       │   │   ├── doctor_details_cubit.dart  # Single Doctor + Slots Cubit
-│       │   │   └── doctors_state.dart         # All Doctor States
-│       │   │
-│       │   └── presentation/                  # UI Layer
-│       │       └── screens/
-│       │           ├── doctor_search_screen.dart       # ✅ Search & Filter Doctors
-│       │           ├── doctor_profile_screen.dart      # ✅ Doctor Profile + Slots
-│       │           ├── clinic_queue_manager_screen.dart  # Doctor Dashboard Queue
-│       │           ├── consultation_view_screen.dart     # Consultation Screen
-│       │           └── schedule_manager_screen.dart      # Schedule Management
-│       │
-│       ├── bookings/                          # 📅 Bookings Feature
-│       │   │
-│       │   ├── data/                          # Data Layer (TODO)
-│       │   │   ├── models/
-│       │   │   │   └── booking_model.dart     # BookingModel (TODO)
-│       │   │   │
-│       │   │   └── datasources/
-│       │   │       └── bookings_remote_data_source.dart  # Bookings API (TODO)
-│       │   │
-│       │   ├── logic/                         # Business Logic (TODO)
-│       │   │   ├── bookings_cubit.dart        # Bookings Cubit (TODO)
-│       │   │   └── bookings_state.dart        # Bookings States (TODO)
-│       │   │
-│       │   └── presentation/                  # UI Layer
-│       │       └── screens/
-│       │           ├── booking_confirmation_screen.dart  # ✅ Booking Confirmation
-│       │           ├── queue_tracker_screen.dart         # Queue Status Screen
-│       │           └── facility_listing_screen.dart      # Rooms Listing
-│       │
-│       ├── home/                              # 🏠 Home & Dashboards
-│       │   └── presentation/
-│       │       └── screens/
-│       │           ├── splash_screen.dart               # ✅ Splash Screen
-│       │           ├── patient_dashboard_screen.dart    # ✅ Patient Dashboard
-│       │           └── doctor_dashboard_screen.dart     # ✅ Doctor Dashboard
-│       │
-│       ├── rooms/                             # 🏥 Rooms Feature (TODO)
-│       │   ├── data/
-│       │   ├── logic/
-│       │   └── presentation/
-│       │
-│       ├── queue/                             # 📊 Queue Feature (TODO)
-│       │   ├── data/
-│       │   ├── logic/
-│       │   └── presentation/
-│       │
-│       └── notifications/                     # 🔔 Notifications Feature (TODO)
-│           ├── data/
-│           ├── logic/
-│           └── presentation/
-│
-├── test/                                      # Unit & Widget Tests
-│   └── widget_test.dart
-│
-├── assets/                                    # Static Assets (if any)
-│   ├── images/
-│   └── icons/
-│
-├── pubspec.yaml                               # ⚙️ Dependencies Configuration
-├── pubspec.lock                               # Dependency Lock File
-│
-├── analysis_options.yaml                      # Linter Configuration
-│
-├── README.md                                  # Project Overview (Original)
-├── DOCUMENTATION.md                           # 📘 Full Documentation (NEW)
-├── CODE_EXAMPLES.md                           # 💻 Code Examples (NEW)
-└── PROJECT_STRUCTURE.md                       # 📁 This File (NEW)
+```text
+lib/ Dart files (excluding .backup): 46
+core/ files: 10
+features/ files: 35
+presentation/screens files: 20
+Approx. Dart LOC inside lib/: 18,569
 ```
 
 ---
 
-## 📄 ملفات مهمة (Key Files)
+## الشجرة الفعلية
 
-### 1. `lib/main.dart` - نقطة البداية
+```text
+lib/
+├── core/
+│   ├── di/
+│   │   └── injection_container.dart
+│   ├── localization/
+│   │   ├── app_localizations.dart
+│   │   └── locale_cubit.dart
+│   ├── network/
+│   │   ├── api_constants.dart
+│   │   └── dio_client.dart
+│   ├── theme/
+│   │   ├── app_colors.dart
+│   │   └── app_theme.dart
+│   └── widgets/
+│       ├── app_top_bar.dart
+│       ├── bottom_nav_bar.dart
+│       └── notifications_screen.dart
+│
+├── features/
+│   ├── auth/
+│   │   ├── data/
+│   │   │   ├── auth_models.dart
+│   │   │   └── auth_remote_data_source.dart
+│   │   ├── logic/
+│   │   │   ├── auth_cubit.dart
+│   │   │   └── auth_state.dart
+│   │   ├── presentation/
+│   │   │   └── screens/
+│   │   │       ├── login_screen.dart
+│   │   │       ├── onboarding_screen.dart
+│   │   │       ├── otp_screen.dart
+│   │   │       ├── phone_verification_screen.dart
+│   │   │       ├── profile_setup_screen.dart
+│   │   │       └── splash_screen.dart
+│   │   └── widgets/
+│   │       └── auth_toggle_button.dart
+│   │
+│   ├── bookings/
+│   │   ├── data/
+│   │   │   ├── datasources/
+│   │   │   │   └── bookings_remote_data_source.dart
+│   │   │   └── models/
+│   │   │       └── booking_model.dart
+│   │   ├── logic/
+│   │   │   ├── bookings_cubit.dart
+│   │   │   └── bookings_state.dart
+│   │   └── presentation/
+│   │       └── screens/
+│   │           └── booking_confirmation_screen.dart
+│   │
+│   ├── doctors/
+│   │   ├── data/
+│   │   │   ├── datasources/
+│   │   │   │   └── doctors_remote_data_source.dart
+│   │   │   └── models/
+│   │   │       └── doctor_model.dart
+│   │   ├── logic/
+│   │   │   ├── doctor_details_cubit.dart
+│   │   │   ├── doctors_cubit.dart
+│   │   │   └── doctors_state.dart
+│   │   └── presentation/
+│   │       └── screens/
+│   │           ├── clinic_queue_manager_screen.dart
+│   │           ├── consultation_view_screen.dart
+│   │           ├── doctor_dashboard_screen.dart
+│   │           ├── doctor_profile_screen.dart
+│   │           ├── doctor_search_screen.dart
+│   │           ├── medical_records_screen.dart
+│   │           └── schedule_manager_screen.dart
+│   │
+│   ├── facilities/
+│   │   └── presentation/
+│   │       └── screens/
+│   │           └── facility_listing_screen.dart
+│   │
+│   ├── home/
+│   │   └── presentation/
+│   │       └── screens/
+│   │           ├── patient_bookings_screen.dart
+│   │           ├── patient_dashboard_screen.dart
+│   │           ├── patient_profile_screen.dart
+│   │           └── patient_tab_navigation.dart
+│   │
+│   └── queue/
+│       ├── logic/
+│       │   └── clinic_queue_cubit.dart
+│       └── presentation/
+│           └── screens/
+│               └── queue_tracker_screen.dart
+│
+└── main.dart
+```
+
+---
+
+## ملاحظات بنيوية مهمة
+
+### 1. لا توجد modules مستقلة للغرف أو الإشعارات
+
+على عكس بعض الوثائق القديمة، المشروع **لا يحتوي** على:
+
+- `features/rooms`
+- `features/notifications`
+
+بدلًا من ذلك:
+
+- منطق الغرف موجود جزئيًا داخل `bookings`
+- شاشة الإشعارات موجودة في `core/widgets/notifications_screen.dart`
+
+### 2. `patient_tab_navigation.dart` ليس شاشة فعلية
+
+هذا الملف موجود داخل `presentation/screens` لكنه helper تنقل فقط:
 
 ```dart
-Responsibilities:
-  ✅ Initialize Firebase
-  ✅ Initialize Dependencies (GetIt)
-  ✅ Setup BlocProviders
-  ✅ Configure MaterialApp
-  ✅ Set initial route (SplashScreen)
+void navigateToPatientRootTab(BuildContext context, int index)
 ```
 
-### 2. `lib/core/di/injection_container.dart` - DI Setup
+### 3. هناك ملف backup واحد يجب تجاهله
 
-```dart
-Registered Services:
-  ✅ SharedPreferences (Singleton)
-  ✅ AuthRemoteDataSource (Singleton)
-  ✅ DoctorsRemoteDataSource (Singleton)
-  ✅ AuthCubit (Factory)
-  ✅ DoctorsCubit (Factory)
-  ✅ DoctorDetailsCubit (Factory)
+الملف:
+
+```text
+lib/features/bookings/presentation/screens/booking_confirmation_screen.dart.backup
 ```
 
-### 3. `lib/core/network/dio_client.dart` - HTTP Client
-
-```dart
-Features:
-  ✅ Singleton Pattern
-  ✅ Base URL Configuration
-  ✅ Request Interceptor (Add Token)
-  ✅ Response Interceptor (Logging)
-  ✅ Error Handling
-```
-
-### 4. `lib/core/network/api_constants.dart` - API Endpoints
-
-```dart
-Contains:
-  ✅ Base URL
-  ✅ Auth Endpoints
-  ✅ Doctors Endpoints
-  ✅ Bookings Endpoints
-  ✅ Rooms Endpoints
-  ✅ Queue Endpoints
-  ✅ Notifications Endpoints
-```
+هذا الملف ليس جزءًا من التطبيق الفعلي الجاري العمل عليه.
 
 ---
 
-## 🎯 Features Breakdown
+## تصنيف الملفات حسب الوظيفة
 
-### 1. Auth Feature (100% Complete ✅)
+## Core
 
-```
-lib/features/auth/
-├── data/
-│   ├── auth_models.dart                       (148 lines)
-│   │   ├── UserRole enum
-│   │   ├── AuthResponse class
-│   │   └── UserModel class
-│   │
-│   └── auth_remote_data_source.dart           (243 lines)
-│       ├── sendOtp()
-│       ├── verifyOtp()
-│       ├── authenticateWithBackend()
-│       └── signOut()
-│
-├── logic/
-│   ├── auth_cubit.dart                        (187 lines)
-│   │   ├── sendOtp()
-│   │   ├── verifyOtp()
-│   │   ├── resendOtp()
-│   │   └── signOut()
-│   │
-│   └── auth_state.dart                        (86 lines)
-│       ├── AuthInitial
-│       ├── AuthLoading
-│       ├── OtpSending
-│       ├── OtpSent
-│       ├── OtpVerifying
-│       ├── AuthSuccess
-│       └── AuthError
-│
-└── presentation/screens/
-    ├── login_screen.dart                      (450+ lines)
-    │   └── BlocConsumer<AuthCubit>
-    │
-    ├── otp_screen.dart                        (380+ lines)
-    │   └── BlocConsumer<AuthCubit>
-    │
-    └── profile_setup_screen.dart              (520+ lines)
-```
+### Dependency Injection
 
-**Total:** ~2,014 lines
+- `core/di/injection_container.dart`
 
-### 2. Doctors Feature (100% Complete ✅)
+### Localization
 
-```
-lib/features/doctors/
-├── data/
-│   ├── models/
-│   │   └── doctor_model.dart                  (258 lines)
-│   │       ├── DoctorModel
-│   │       ├── ScheduleModel
-│   │       └── AvailableSlotsModel
-│   │
-│   └── datasources/
-│       └── doctors_remote_data_source.dart    (186 lines)
-│           ├── getDoctors()
-│           ├── getDoctorDetails()
-│           └── getAvailableSlots()
-│
-├── logic/
-│   ├── doctors_cubit.dart                     (132 lines)
-│   │   ├── fetchDoctors()
-│   │   ├── refreshDoctors()
-│   │   ├── searchDoctors()
-│   │   ├── filterBySpecialty()
-│   │   └── clearFilters()
-│   │
-│   ├── doctor_details_cubit.dart              (182 lines)
-│   │   ├── fetchDoctorDetailsAndSlots()
-│   │   ├── fetchDoctorDetails()
-│   │   ├── fetchSlotsForDate()
-│   │   ├── selectSlot()
-│   │   └── clearSelectedSlot()
-│   │
-│   └── doctors_state.dart                     (168 lines)
-│       ├── DoctorsInitial
-│       ├── DoctorsLoading
-│       ├── DoctorsLoaded
-│       ├── DoctorsError
-│       ├── DoctorDetailsInitial
-│       ├── DoctorDetailsLoading
-│       ├── DoctorDetailsLoaded
-│       ├── DoctorDetailsError
-│       └── SlotsLoading
-│
-└── presentation/screens/
-    ├── doctor_search_screen.dart              (650+ lines)
-    │   └── BlocBuilder<DoctorsCubit>
-    │
-    ├── doctor_profile_screen.dart             (750+ lines)
-    │   └── BlocBuilder<DoctorDetailsCubit>
-    │
-    ├── clinic_queue_manager_screen.dart       (580+ lines)
-    ├── consultation_view_screen.dart          (420+ lines)
-    └── schedule_manager_screen.dart           (490+ lines)
+- `core/localization/app_localizations.dart`
+- `core/localization/locale_cubit.dart`
 
-```
+### Network
 
-**Total:** ~3,816 lines
+- `core/network/api_constants.dart`
+- `core/network/dio_client.dart`
 
-### 3. Bookings Feature (20% Complete 🚧)
+ملاحظة حالية:
 
-```
-lib/features/bookings/
-├── data/                                      (TODO)
-│   ├── models/
-│   │   └── booking_model.dart
-│   │
-│   └── datasources/
-│       └── bookings_remote_data_source.dart
-│
-├── logic/                                     (TODO)
-│   ├── bookings_cubit.dart
-│   └── bookings_state.dart
-│
-└── presentation/screens/
-    ├── booking_confirmation_screen.dart       (620+ lines) ✅
-    ├── queue_tracker_screen.dart              (580+ lines) ✅
-    └── facility_listing_screen.dart           (540+ lines) ✅
-```
+- `ApiConstants` يتضمن الآن endpoint إضافي للمصادقة:
+  - `/auth/check-doctor-phone`
 
-**Total:** ~1,740 lines (UI only)
+### Theme
 
-### 4. Home Feature (100% Complete ✅)
+- `core/theme/app_colors.dart`
+- `core/theme/app_theme.dart`
 
-```
-lib/features/home/presentation/screens/
-├── splash_screen.dart                         (180+ lines) ✅
-├── patient_dashboard_screen.dart              (850+ lines) ✅
-└── doctor_dashboard_screen.dart               (720+ lines) ✅
-```
+### Shared Widgets
 
-**Total:** ~1,750 lines
+- `core/widgets/app_top_bar.dart`
+- `core/widgets/bottom_nav_bar.dart`
+- `core/widgets/notifications_screen.dart`
 
 ---
 
-## 🧩 Core Components
+## Features حسب المصدر
 
-### 1. Dependency Injection
+## API-backed بدرجة واضحة
 
-```
-lib/core/di/injection_container.dart           (42 lines)
-```
+- `auth`
+- `doctors`
+- `bookings`
 
-**Pattern:** Service Locator (GetIt)
+## Local state / simulated
 
-**Lifecycle:**
-- `registerSingleton` → Instantiated once, lives forever
-- `registerLazySingleton` → Instantiated on first use, lives forever
-- `registerFactory` → New instance on each call
+- `queue`
+- أجزاء كبيرة من `doctors/presentation/screens`
+- أجزاء من `home`
 
-### 2. Network Layer
+## Static / mock-heavy UI
 
-```
-lib/core/network/
-├── dio_client.dart                            (120+ lines)
-│   └── Singleton HTTP Client
-│
-└── api_constants.dart                         (85+ lines)
-    └── All API Endpoints
-```
-
-### 3. Theme System
-
-```
-lib/core/theme/
-└── app_colors.dart                            (45 lines)
-    ├── Primary Colors
-    ├── Secondary Colors
-    ├── Tertiary Colors
-    ├── Surface Colors
-    ├── Status Colors
-    └── Text Colors
-```
-
-### 4. Shared Widgets
-
-```
-lib/core/widgets/
-├── bottom_nav_bar.dart                        (180+ lines)
-│   ├── Patient Navigation (5 tabs)
-│   └── Doctor Navigation (5 tabs)
-│
-└── app_top_bar.dart                           (85+ lines)
-    ├── Title
-    ├── Back Button
-    └── Actions
-```
+- `facilities`
+- أجزاء من `profile`, `schedule`, `medical records`
 
 ---
 
-## 📦 Dependencies (pubspec.yaml)
+## الشاشات الفعلية حسب المجال
 
-### Production Dependencies
+## Auth Screens
 
-```yaml
-flutter_bloc: ^9.1.1           # State Management (BLoC/Cubit)
-equatable: ^2.0.8              # Value Equality for States
-dio: ^5.9.2                    # HTTP Client
-get_it: ^9.2.1                 # Dependency Injection
-shared_preferences: ^2.5.5     # Local Storage (Token, Role)
-intl: ^0.20.2                  # Date Formatting (DateFormat)
-firebase_core: ^3.13.0         # Firebase Core SDK
-firebase_auth: ^5.6.1          # Firebase Authentication (Phone)
-cupertino_icons: ^1.0.8        # iOS Style Icons
-```
+- `LoginScreen`
+- `OnboardingScreen`
+- `OtpScreen`
+- `PhoneVerificationScreen`
+- `ProfileSetupScreen`
+- `SplashScreen`
 
-### Dev Dependencies
+## Patient / Shared Screens
 
-```yaml
-flutter_test: sdk: flutter     # Testing Framework
-flutter_lints: ^5.0.0          # Linting Rules
-```
+- `PatientDashboardScreen`
+- `PatientBookingsScreen`
+- `PatientProfileScreen`
+- `DoctorSearchScreen`
+- `DoctorProfileScreen`
+- `BookingConfirmationScreen`
+- `FacilityListingScreen`
+- `QueueTrackerScreen`
 
----
+## Doctor Screens
 
-## 🎨 Screens Status
-
-### ✅ Implemented & Working
-
-| Screen | Path | Lines | Status |
-|--------|------|-------|--------|
-| Splash Screen | `home/presentation/screens/splash_screen.dart` | 180 | ✅ Complete |
-| Login Screen | `auth/presentation/screens/login_screen.dart` | 450 | ✅ Complete + API |
-| OTP Screen | `auth/presentation/screens/otp_screen.dart` | 380 | ✅ Complete + API |
-| Profile Setup | `auth/presentation/screens/profile_setup_screen.dart` | 520 | ✅ Complete (UI) |
-| Patient Dashboard | `home/presentation/screens/patient_dashboard_screen.dart` | 850 | ✅ Complete (UI) |
-| Doctor Dashboard | `home/presentation/screens/doctor_dashboard_screen.dart` | 720 | ✅ Complete (UI) |
-| Doctor Search | `doctors/presentation/screens/doctor_search_screen.dart` | 650 | ✅ Complete + API |
-| Doctor Profile | `doctors/presentation/screens/doctor_profile_screen.dart` | 750 | ✅ Complete + API |
-| Booking Confirmation | `bookings/presentation/screens/booking_confirmation_screen.dart` | 620 | ✅ Complete (UI) |
-| Queue Tracker | `bookings/presentation/screens/queue_tracker_screen.dart` | 580 | ✅ Complete (UI) |
-| Facility Listing | `bookings/presentation/screens/facility_listing_screen.dart` | 540 | ✅ Complete (UI) |
-| Clinic Queue Manager | `doctors/presentation/screens/clinic_queue_manager_screen.dart` | 580 | ✅ Complete (UI) |
-| Consultation View | `doctors/presentation/screens/consultation_view_screen.dart` | 420 | ✅ Complete (UI) |
-| Schedule Manager | `doctors/presentation/screens/schedule_manager_screen.dart` | 490 | ✅ Complete (UI) |
-
-**Total: 14 screens | ~7,730 lines**
+- `DoctorDashboardScreen`
+- `ClinicQueueManagerScreen`
+- `ConsultationViewScreen`
+- `ScheduleManagerScreen`
+- `MedicalRecordsScreen`
 
 ---
 
-## 🔨 TODO Features
+## أهم الملفات حسب المسؤولية
 
-### Phase 1: Bookings API Integration
+### App Bootstrap
 
-```
-lib/features/bookings/
-├── data/
-│   ├── models/booking_model.dart              ❌ TODO
-│   └── datasources/bookings_remote_data_source.dart  ❌ TODO
-│
-└── logic/
-    ├── bookings_cubit.dart                    ❌ TODO
-    └── bookings_state.dart                    ❌ TODO
-```
+- `main.dart`
+  - Firebase init
+  - DI init
+  - MultiBlocProvider
+  - MaterialApp
 
-### Phase 2: Rooms Feature
+### Auth
 
-```
-lib/features/rooms/
-├── data/
-│   ├── models/room_model.dart                 ❌ TODO
-│   └── datasources/rooms_remote_data_source.dart  ❌ TODO
-│
-└── logic/
-    ├── rooms_cubit.dart                       ❌ TODO
-    └── rooms_state.dart                       ❌ TODO
-```
+- `auth_remote_data_source.dart`
+  - doctor whitelist pre-check via backend
+  - Firebase Phone Auth
+  - backend auth
+- `auth_cubit.dart`
+  - auth state orchestration
+  - maps whitelist rejection to `AuthError`
 
-### Phase 3: Queue Tracking
+### Auth Flow المختصر الحالي
 
-```
-lib/features/queue/
-├── data/
-│   ├── models/queue_model.dart                ❌ TODO
-│   └── datasources/queue_remote_data_source.dart  ❌ TODO
-│
-└── logic/
-    ├── queue_cubit.dart                       ❌ TODO
-    └── queue_state.dart                       ❌ TODO
-```
+- `LoginScreen`
+  - إدخال رقم الهاتف
+  - عرض `SnackBar` بالأخطاء القادمة من `AuthCubit`
+- `AuthCubit.sendOtp`
+  - validation
+  - loading state
+  - call to remote data source
+- `AuthRemoteDataSource.sendOtp`
+  - `POST /auth/check-doctor-phone`
+  - if allowed -> `FirebaseAuth.verifyPhoneNumber`
+  - if rejected -> `AuthException('عذراً، رقمك غير مسجل في النظام. يرجى مراجعة إدارة العيادة.')`
 
-### Phase 4: Notifications
+### Doctors
 
-```
-lib/features/notifications/
-├── data/
-│   ├── models/notification_model.dart         ❌ TODO
-│   └── datasources/notifications_remote_data_source.dart  ❌ TODO
-│
-└── logic/
-    ├── notifications_cubit.dart               ❌ TODO
-    └── notifications_state.dart               ❌ TODO
-```
+- `doctors_remote_data_source.dart`
+  - doctors API calls
+- `doctors_cubit.dart`
+  - list/search/filter
+- `doctor_details_cubit.dart`
+  - doctor details + slots + cache
 
----
+### Bookings
 
-## 📊 Code Statistics
+- `bookings_remote_data_source.dart`
+  - create/fetch/cancel/check-in
+- `bookings_cubit.dart`
+  - booking workflows
 
-### By Feature
+### Queue
 
-| Feature | Files | Lines | Completion |
-|---------|-------|-------|------------|
-| Auth | 6 | ~2,014 | 100% ✅ |
-| Doctors | 9 | ~3,816 | 100% ✅ |
-| Bookings | 3 | ~1,740 | 20% 🚧 |
-| Home | 3 | ~1,750 | 100% ✅ |
-| Core | 6 | ~650 | 100% ✅ |
-| **Total** | **27** | **~9,970** | **75%** |
+- `clinic_queue_cubit.dart`
+  - simulated queue engine
+  - queue alerts
+  - timing estimates
 
-### By Layer
+### Doctor Workspace
 
-| Layer | Files | Lines | Status |
-|-------|-------|-------|--------|
-| Data (Models + DataSources) | 8 | ~2,450 | 65% |
-| Logic (Cubits + States) | 6 | ~1,100 | 65% |
-| Presentation (Screens) | 14 | ~7,730 | 100% |
-| Core | 6 | ~650 | 100% |
-| **Total** | **34** | **~11,930** | **75%** |
+- `doctor_dashboard_screen.dart`
+- `clinic_queue_manager_screen.dart`
+- `consultation_view_screen.dart`
+- `medical_records_screen.dart`
+- `schedule_manager_screen.dart`
 
 ---
 
-## 🎯 Next Steps
+## الملفات المضافة أو المعدلة حديثًا
 
-### Immediate Priority
+هذه الملفات تمثل آخر ما ظهر في التطبيق داخل الـ worktree الحالي:
 
-1. **Bookings Data Layer**
-   ```
-   Create: booking_model.dart
-   Create: bookings_remote_data_source.dart
-   Implement: POST /api/bookings
-   ```
-
-2. **Bookings Logic Layer**
-   ```
-   Create: bookings_cubit.dart
-   Create: bookings_state.dart
-   Implement: createBooking(), getMyBookings()
-   ```
-
-3. **Integrate Booking Confirmation**
-   ```
-   Update: booking_confirmation_screen.dart
-   Add: BlocConsumer<BookingsCubit>
-   Call API on "Confirm" button
-   ```
+- `lib/features/doctors/presentation/screens/medical_records_screen.dart`
+- `lib/core/widgets/notifications_screen.dart`
+- `lib/features/doctors/presentation/screens/consultation_view_screen.dart`
+- `lib/features/doctors/presentation/screens/doctor_dashboard_screen.dart`
+- `lib/features/doctors/presentation/screens/schedule_manager_screen.dart`
 
 ---
 
-## 📚 Documentation Files
+## ما الذي لا تعكسه البنية القديمة بدقة
 
-```
-PROJECT ROOT/
-├── README.md                    # Basic Project Info (Original)
-├── DOCUMENTATION.md             # Complete Documentation (23 KB)
-├── CODE_EXAMPLES.md             # Code Examples & Patterns (32 KB)
-└── PROJECT_STRUCTURE.md         # This File - File Tree (15 KB)
-```
-
-**Total Documentation: ~70 KB / ~2,500 lines**
+- عدد الملفات لم يعد `~35`
+- الشاشات لم تعد `14`
+- `queue` لم تعد مجرد placeholder
+- `bookings` لم تعد TODO فقط
+- `medical_records_screen.dart` موجودة فعليًا الآن
+- `notifications_screen.dart` موجودة لكن خارج feature module مستقل
 
 ---
 
-## 🔍 How to Navigate This Project
+## توصيف مختصر للبنية الحالية
 
-### For New Developers
+يمكن وصف المشروع الآن كالتالي:
 
-1. **Start Here:**
-   - Read `DOCUMENTATION.md` - فهم المشروع بالكامل
-   - Read `CODE_EXAMPLES.md` - تعلم الأنماط البرمجية
-   - Read `PROJECT_STRUCTURE.md` - فهم بنية الملفات
+- **Feature-first**
+- **Cubit-driven**
+- **API + Local hybrid**
+- **Shared UI components in core**
+- **Partial clean separation, without domain layer**
 
-2. **Explore Code:**
-   - `lib/main.dart` - نقطة البداية
-   - `lib/core/` - المكونات المشتركة
-   - `lib/features/auth/` - مثال كامل على Feature
-
-3. **Add New Feature:**
-   - Follow Clean Architecture pattern
-   - Copy structure from `features/auth/` or `features/doctors/`
-   - Register in `injection_container.dart`
-
-### For Code Review
-
-1. **Check Data Layer:**
-   - Models have `fromJson()` and `toJson()`
-   - DataSources handle exceptions properly
-   - API endpoints match backend
-
-2. **Check Logic Layer:**
-   - Cubits extend `Cubit<State>`
-   - States are sealed classes with Equatable
-   - Error handling is comprehensive
-
-3. **Check Presentation Layer:**
-   - Use BlocBuilder/BlocConsumer
-   - Handle all state cases (Loading, Success, Error)
-   - No business logic in UI
-
----
-
-## 🎨 File Naming Conventions
-
-```
-✅ Correct:
-- auth_cubit.dart
-- doctor_model.dart
-- login_screen.dart
-- api_constants.dart
-
-❌ Wrong:
-- AuthCubit.dart
-- DoctorModel.dart
-- LoginScreen.dart
-- APIConstants.dart
-```
-
-**Rule:** `snake_case` for files, `PascalCase` for classes
-
----
-
-## 📝 Notes
-
-- **Clean Architecture:** Data → Logic → Presentation
-- **BLoC Pattern:** Cubit for state management
-- **DI:** GetIt for dependency injection
-- **API Client:** Dio with Interceptors
-- **Local Storage:** SharedPreferences for tokens
-- **Firebase:** Phone Authentication only
-
----
-
-**Last Updated:** 2026-04-08  
-**Version:** 1.0.0-alpha  
-**Total Files:** ~35 Dart files  
-**Total Lines:** ~11,000+ lines
+هذا الوصف أقرب كثيرًا للحالة الفعلية الحالية من الوصف القديم.
