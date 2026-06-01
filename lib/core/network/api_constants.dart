@@ -1,8 +1,8 @@
 class ApiConstants {
   ApiConstants._();
 
-  // Android emulator access to the host machine's Laravel server.
-  static const String baseUrl = 'http://10.0.2.2:8000/api';
+  // Cloudflare Tunnel — Laravel API
+  static const String baseUrl = 'https://tobago-deposit-weekend-translate.trycloudflare.com/api';
 
   static const String accessTokenKey = 'access_token';
 

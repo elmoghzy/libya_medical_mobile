@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../localization/locale_cubit.dart';
 import '../services/push_notification_service.dart';
+import '../services/reverb_echo_service.dart';
 import '../../features/auth/data/auth_remote_data_source.dart';
 import '../../features/auth/logic/auth_cubit.dart';
 import '../../features/bookings/data/datasources/bookings_remote_data_source.dart';
@@ -54,6 +55,8 @@ Future<void> initDependencies() async {
     ),
   );
 
+  sl.registerLazySingleton<ReverbEchoService>(() => ReverbEchoService());
+
   // ============ Cubits ============
   sl.registerFactory<AuthCubit>(
     () => AuthCubit(
@@ -79,5 +82,7 @@ Future<void> initDependencies() async {
     () => LocaleCubit(sl<SharedPreferences>()),
   );
 
-  sl.registerLazySingleton<ClinicQueueCubit>(() => ClinicQueueCubit());
+  sl.registerLazySingleton<ClinicQueueCubit>(
+    () => ClinicQueueCubit(reverbEchoService: sl<ReverbEchoService>()),
+  );
 }

@@ -116,7 +116,7 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen>
       context.read<AuthCubit>().verifyOtp(
         verificationId: _verificationId!,
         smsCode: code,
-        phoneNumber: widget.onboardingData.phoneNumber!,
+        name: widget.onboardingData.fullName,
       );
     }
   }

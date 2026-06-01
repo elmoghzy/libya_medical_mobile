@@ -20,18 +20,25 @@ class QueueTrackerScreen extends StatefulWidget {
 class _QueueTrackerScreenState extends State<QueueTrackerScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulseController;
+  late final ClinicQueueCubit _queueCubit;
 
   @override
   void initState() {
     super.initState();
+    _queueCubit = context.read<ClinicQueueCubit>();
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _queueCubit.startQueueListener(doctorId: _queueCubit.state.doctorId);
+    });
   }
 
   @override
   void dispose() {
+    _queueCubit.stopQueueListener();
     _pulseController.dispose();
     super.dispose();
   }

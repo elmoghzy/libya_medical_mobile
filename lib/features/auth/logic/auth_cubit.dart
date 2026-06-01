@@ -121,7 +121,7 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> verifyOtp({
     required String verificationId,
     required String smsCode,
-    required String phoneNumber,
+    String? name,
   }) async {
     if (smsCode.isEmpty || smsCode.length < 6) {
       emit(
@@ -137,7 +137,7 @@ class AuthCubit extends Cubit<AuthState> {
 
     try {
       // Step 1: Verify OTP with Firebase
-      final firebaseUid = await _authDataSource.verifyOtp(
+      final idToken = await _authDataSource.verifyOtp(
         verificationId,
         smsCode,
       );
@@ -146,8 +146,8 @@ class AuthCubit extends Cubit<AuthState> {
 
       // Step 2: Authenticate with Laravel backend
       final authResponse = await _authDataSource.authenticateWithBackend(
-        phoneNumber,
-        firebaseUid,
+        idToken,
+        name?.trim() ?? '',
       );
 
       // Step 3: Save credentials locally

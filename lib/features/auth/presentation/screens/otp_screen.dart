@@ -85,7 +85,7 @@ class _OtpScreenState extends State<OtpScreen> {
       context.read<AuthCubit>().verifyOtp(
         verificationId: widget.verificationId,
         smsCode: _otpCode,
-        phoneNumber: widget.phoneNumber,
+        name: '',
       );
     }
   }

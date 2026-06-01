@@ -1,7 +1,10 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../core/services/reverb_echo_service.dart';
 
 enum ClinicQueuePatientStatus { waiting, inProgress, completed }
 
@@ -50,6 +53,7 @@ class ClinicQueuePatient extends Equatable {
 
   ClinicQueuePatient copyWith({
     ClinicQueuePatientStatus? status,
+    int? queueNumber,
     int? baseDurationMinutes,
     int? delayMinutes,
     DateTime? appointmentDate,
@@ -61,7 +65,7 @@ class ClinicQueuePatient extends Equatable {
       age: age,
       genderEn: genderEn,
       genderAr: genderAr,
-      queueNumber: queueNumber,
+      queueNumber: queueNumber ?? this.queueNumber,
       appointmentDate: appointmentDate ?? this.appointmentDate,
       checkInTime: checkInTime,
       scheduledTime: scheduledTime,
@@ -130,6 +134,7 @@ class ClinicQueueState extends Equatable {
   const ClinicQueueState({
     required this.patients,
     required this.trackedPatientId,
+    required this.doctorId,
     required this.roomLabel,
     required this.doctorNameEn,
     required this.doctorNameAr,
@@ -147,6 +152,7 @@ class ClinicQueueState extends Equatable {
 
     return const ClinicQueueState(
       trackedPatientId: 4,
+      doctorId: 1,
       roomLabel: 'A-104',
       doctorNameEn: 'Dr. Ahmed Hassan',
       doctorNameAr: 'د. أحمد حسن',
@@ -322,6 +328,7 @@ class ClinicQueueState extends Equatable {
 
   final List<ClinicQueuePatient> patients;
   final int trackedPatientId;
+  final int doctorId;
   final String roomLabel;
   final String doctorNameEn;
   final String doctorNameAr;
@@ -333,6 +340,7 @@ class ClinicQueueState extends Equatable {
   ClinicQueueState copyWith({
     List<ClinicQueuePatient>? patients,
     int? trackedPatientId,
+    int? doctorId,
     String? roomLabel,
     String? doctorNameEn,
     String? doctorNameAr,
@@ -345,6 +353,7 @@ class ClinicQueueState extends Equatable {
     return ClinicQueueState(
       patients: patients ?? this.patients,
       trackedPatientId: trackedPatientId ?? this.trackedPatientId,
+      doctorId: doctorId ?? this.doctorId,
       roomLabel: roomLabel ?? this.roomLabel,
       doctorNameEn: doctorNameEn ?? this.doctorNameEn,
       doctorNameAr: doctorNameAr ?? this.doctorNameAr,
@@ -387,6 +396,7 @@ class ClinicQueueState extends Equatable {
   List<Object?> get props => [
     patients,
     trackedPatientId,
+    doctorId,
     roomLabel,
     doctorNameEn,
     doctorNameAr,
@@ -398,7 +408,12 @@ class ClinicQueueState extends Equatable {
 }
 
 class ClinicQueueCubit extends Cubit<ClinicQueueState> {
-  ClinicQueueCubit() : super(ClinicQueueState.initial());
+  ClinicQueueCubit({required ReverbEchoService reverbEchoService})
+    : _reverbEchoService = reverbEchoService,
+      super(ClinicQueueState.initial());
+
+  final ReverbEchoService _reverbEchoService;
+  int? _listeningDoctorId;
 
   bool canCallPatient(int patientId) {
     final patient = state.patientById(patientId);
@@ -785,5 +800,124 @@ class ClinicQueueCubit extends Cubit<ClinicQueueState> {
     final hours = int.tryParse(parts.first) ?? 0;
     final minutes = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
     return (hours * 60) + minutes;
+  }
+
+  Future<void> startQueueListener({required int doctorId}) async {
+    if (doctorId <= 0) {
+      return;
+    }
+
+    if (_listeningDoctorId == doctorId) {
+      return;
+    }
+
+    await stopQueueListener();
+    _listeningDoctorId = doctorId;
+
+    await _reverbEchoService.initialize();
+    _reverbEchoService.listenToQueueChannel(
+      doctorId: doctorId,
+      onEvent: _handleQueueStatusEvent,
+    );
+  }
+
+  Future<void> stopQueueListener() async {
+    _listeningDoctorId = null;
+    _reverbEchoService.leaveChannel();
+  }
+
+  void _handleQueueStatusEvent(dynamic data) {
+    final payload = _normalizePayload(data);
+    final bookingId = _parseIntSafely(payload['booking_id']);
+    if (bookingId == null) {
+      return;
+    }
+
+    final updatedStatus = _mapBackendStatus(payload['status']);
+    final queueNumber = _parseIntSafely(payload['queue_number']);
+
+    final updatedPatients = state.patients
+        .map(
+          (patient) => patient.id == bookingId
+              ? patient.copyWith(
+                  status: updatedStatus ?? patient.status,
+                  queueNumber: queueNumber ?? patient.queueNumber,
+                )
+              : patient,
+        )
+        .toList(growable: false);
+
+    emit(state.copyWith(patients: updatedPatients));
+  }
+
+  ClinicQueuePatientStatus? _mapBackendStatus(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+
+    final status = value.toString();
+    switch (status) {
+      case 'waiting':
+      case 'confirmed':
+      case 'checked_in':
+        return ClinicQueuePatientStatus.waiting;
+      case 'in_progress':
+        return ClinicQueuePatientStatus.inProgress;
+      case 'completed':
+      case 'cancelled':
+        return ClinicQueuePatientStatus.completed;
+      default:
+        return null;
+    }
+  }
+
+  Map<String, dynamic> _normalizePayload(dynamic data) {
+    if (data is Map) {
+      final mapped = Map<String, dynamic>.from(data as Map);
+      final nested = mapped['data'];
+      if (nested is Map) {
+        return Map<String, dynamic>.from(nested);
+      }
+      if (nested is String && nested.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(nested);
+          if (decoded is Map) {
+            return Map<String, dynamic>.from(decoded as Map);
+          }
+        } catch (_) {
+          return mapped;
+        }
+      }
+      return mapped;
+    }
+
+    if (data is String && data.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(data);
+        if (decoded is Map) {
+          return Map<String, dynamic>.from(decoded as Map);
+        }
+      } catch (_) {
+        return <String, dynamic>{};
+      }
+    }
+
+    return <String, dynamic>{};
+  }
+
+  int? _parseIntSafely(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+
+    if (value is int) {
+      return value;
+    }
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    return int.tryParse(value.toString());
   }
 }

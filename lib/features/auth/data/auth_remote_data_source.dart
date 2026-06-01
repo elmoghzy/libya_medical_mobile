@@ -27,14 +27,11 @@ abstract class IAuthRemoteDataSource {
   /// Sends OTP to the given phone number
   Future<String> sendOtp(String phoneNumber);
 
-  /// Verifies the OTP code and returns Firebase UID
+  /// Verifies the OTP code and returns Firebase ID token
   Future<String> verifyOtp(String verificationId, String smsCode);
 
-  /// Authenticates with Laravel backend using Firebase UID
-  Future<AuthResponse> authenticateWithBackend(
-    String phoneNumber,
-    String firebaseUid,
-  );
+  /// Authenticates with Laravel backend using Firebase ID token
+  Future<AuthResponse> authenticateWithBackend(String idToken, String name);
 
   /// Persists the active workspace on the backend
   Future<void> setActiveWorkspace(int institutionId);
@@ -172,7 +169,7 @@ class AuthRemoteDataSource implements IAuthRemoteDataSource {
   }
 
   /// Verifies the OTP code with Firebase
-  /// Returns the Firebase user's UID
+  /// Returns the Firebase user's ID token
   @override
   Future<String> verifyOtp(String verificationId, String smsCode) async {
     try {
@@ -193,7 +190,14 @@ class AuthRemoteDataSource implements IAuthRemoteDataSource {
         );
       }
 
-      return user.uid;
+      final idToken = await user.getIdToken();
+      if (idToken == null) {
+        throw const AuthException(
+          'Failed to get ID token.',
+          code: 'null-token',
+        );
+      }
+      return idToken;
     } on FirebaseAuthException catch (e) {
       throw _mapFirebaseException(e);
     } catch (e) {
@@ -203,7 +207,7 @@ class AuthRemoteDataSource implements IAuthRemoteDataSource {
   }
 
   /// Authenticates with Laravel backend
-  /// Sends phone number and Firebase UID to get Sanctum token
+  /// Sends Firebase ID token and user name to get Sanctum token
   ///
   /// API Response format (flat JSON):
   /// {
@@ -212,17 +216,12 @@ class AuthRemoteDataSource implements IAuthRemoteDataSource {
   ///   "user": { "id": 1, "name": "...", "phone": "..." }
   /// }
   @override
-  Future<AuthResponse> authenticateWithBackend(
-    String phoneNumber,
-    String firebaseUid,
-  ) async {
+  Future<AuthResponse> authenticateWithBackend(String idToken, String name)
+    async {
     try {
       final response = await _dioClient.client.post<Map<String, dynamic>>(
         ApiConstants.verifyPhone,
-        data: {
-          'phone': _formatPhoneNumberForApi(phoneNumber),
-          'firebase_uid': firebaseUid,
-        },
+        data: {'id_token': idToken, 'name': name},
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
