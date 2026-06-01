@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 
 final ThemeData lightTheme = ThemeData(
   useMaterial3: true,
+  fontFamily: GoogleFonts.cairo().fontFamily,
   scaffoldBackgroundColor: AppColors.background,
   colorScheme: const ColorScheme.light(
     primary: AppColors.primary,
