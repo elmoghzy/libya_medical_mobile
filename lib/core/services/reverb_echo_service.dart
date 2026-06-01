@@ -3,10 +3,10 @@ import 'package:pusher_channels_flutter/pusher_channels_flutter.dart';
 
 class ReverbEchoService {
   ReverbEchoService({
-    this.host = 'tobago-deposit-weekend-translate.trycloudflare.com',
-    this.port = 443,
-    this.wsPort = 443,
-    this.forceTLS = true,
+    this.host = '10.0.2.2',
+    this.port = 8081,
+    this.wsPort = 8081,
+    this.forceTLS = false,
     this.disableStats = true,
     this.key = 'your_reverb_app_key',
     this.cluster = 'mt1',

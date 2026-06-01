@@ -647,16 +647,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             ),
             const SizedBox(height: 20),
 
-            // Email field
-            _buildTextField(
-              controller: _emailController,
-              label: 'البريد الإلكتروني (اختياري)',
-              hint: 'example@email.com',
-              icon: Icons.email_outlined,
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 40),
-
             _buildPrimaryButton(
               text: _data.role == 'doctor' ? 'التالي' : 'التحقق من الهاتف',
               onPressed: () {
